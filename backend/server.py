@@ -268,11 +268,6 @@ async def delete_stock(stock_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Stock not found")
     return {"message": "Deleted successfully"}
 
-
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Stock not found")
-    return {"message": "Deleted successfully"}
-
 @api_router.get("/stocks/{stock_id}/price")
 async def get_stock_current_price(stock_id: str, request: Request):
     current_user = await get_current_user(request, db)
