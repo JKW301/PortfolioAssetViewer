@@ -292,15 +292,18 @@ async def get_stock_current_price(stock_id: str, request: Request):
 # Coin endpoints
 @api_router.post("/coins", response_model=CoinAsset)
 async def create_coin(asset: CoinAssetCreate, request: Request):
-    asset_obj = CoinAsset(**asset.model_dump())
+    current_user = await get_current_user(request, db)
+        asset_obj = CoinAsset(**asset.model_dump())
     doc = asset_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
+    doc[\'user_id\'] = current_user.user_id
     await db.coin_assets.insert_one(doc)
     return asset_obj
 
 @api_router.get("/coins", response_model=List[CoinAsset])
 async def get_coins(request: Request):
-    coins = await db.coin_assets.find({}, {"_id": 0}).to_list(1000)
+    current_user = await get_current_user(request, db)
+    coins = await db.coin_assets.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(1000)
     for coin in coins:
         if isinstance(coin['created_at'], str):
             coin['created_at'] = datetime.fromisoformat(coin['created_at'])
@@ -308,14 +311,16 @@ async def get_coins(request: Request):
 
 @api_router.delete("/coins/{coin_id}")
 async def delete_coin(coin_id: str, request: Request):
-    result = await db.coin_assets.delete_one({"id": coin_id})
+    current_user = await get_current_user(request, db)
+    result = await db.coin_assets.delete_one({"id": coin_id, "user_id": current_user.user_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Coin not found")
     return {"message": "Deleted successfully"}
 
 @api_router.get("/coins/{coin_id}/price")
 async def get_coin_current_price(coin_id: str, request: Request):
-    coin = await db.coin_assets.find_one({"id": coin_id}, {"_id": 0})
+    current_user = await get_current_user(request, db)
+    coin = await db.coin_assets.find_one({"id": coin_id, "user_id": current_user.user_id}, {"_id": 0})
     if not coin:
         raise HTTPException(status_code=404, detail="Coin not found")
     
