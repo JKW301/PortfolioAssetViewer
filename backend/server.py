@@ -22,9 +22,19 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Binance client
+# Binance client (lazy initialization)
 binance_api_key = os.environ.get('BINANCE_API_KEY', '')
-binance_client = Client(binance_api_key, '')
+binance_client = None
+
+def get_binance_client():
+    global binance_client
+    if binance_client is None:
+        try:
+            binance_client = Client(binance_api_key, '', testnet=False)
+        except Exception as e:
+            logger.error(f"Failed to initialize Binance client: {e}")
+            binance_client = False
+    return binance_client if binance_client is not False else None
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -98,11 +108,15 @@ def get_eur_usd_rate():
 
 async def get_crypto_price_eur(symbol: str) -> Optional[float]:
     try:
-        ticker = binance_client.get_symbol_ticker(symbol=f"{symbol.upper()}USDT")
+        client = get_binance_client()
+        if client is None:
+            return None
+        ticker = client.get_symbol_ticker(symbol=f"{symbol.upper()}USDT")
         usd_price = float(ticker['price'])
         eur_rate = get_eur_usd_rate()
         return usd_price * eur_rate
-    except:
+    except Exception as e:
+        logger.error(f"Error fetching crypto price for {symbol}: {e}")
         return None
 
 async def get_stock_price_eur(symbol: str) -> Optional[float]:
