@@ -114,9 +114,14 @@ heroku open --app votre-app
 
 ### Build Failed - Requirements.txt
 ```bash
-# Vérifiez que requirements.txt est à la RACINE
+# Vérifiez que requirements.txt est à la RACINE et ne contient pas emergentintegrations
 ls -la /app/requirements.txt
+grep -v "emergentintegrations" requirements.txt
 ```
+
+### Python Version Warning
+- Heroku recommande maintenant `.python-version` au lieu de `runtime.txt`
+- ✅ Déjà configuré avec `.python-version` contenant `3.11`
 
 ### Application Error
 ```bash
