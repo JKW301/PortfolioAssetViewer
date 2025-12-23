@@ -191,16 +191,19 @@ async def get_coin_price_eur(url: str, css_selector: str) -> Optional[float]:
 
 # Crypto endpoints
 @api_router.post("/crypto", response_model=CryptoAsset)
-async def create_crypto(asset: CryptoAssetCreate):
+async def create_crypto(asset: CryptoAssetCreate, request: Request):
+    current_user = await get_current_user(request, db)
     asset_obj = CryptoAsset(**asset.model_dump())
     doc = asset_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
+    doc['user_id'] = current_user.user_id
     await db.crypto_assets.insert_one(doc)
     return asset_obj
 
 @api_router.get("/crypto", response_model=List[CryptoAsset])
-async def get_cryptos():
-    cryptos = await db.crypto_assets.find({}, {"_id": 0}).to_list(1000)
+async def get_cryptos(request: Request):
+    current_user = await get_current_user(request, db)
+    cryptos = await db.crypto_assets.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(1000)
     for crypto in cryptos:
         if isinstance(crypto['created_at'], str):
             crypto['created_at'] = datetime.fromisoformat(crypto['created_at'])
