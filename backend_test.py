@@ -19,6 +19,10 @@ class InvestmentTrackerTester:
         """Run a single API test"""
         url = f"{self.base_url}/api/{endpoint}"
         headers = {'Content-Type': 'application/json'}
+        
+        # Add authentication if session token is available
+        if self.session_token:
+            headers['Authorization'] = f'Bearer {self.session_token}'
 
         self.tests_run += 1
         print(f"\n🔍 Testing {name}...")
