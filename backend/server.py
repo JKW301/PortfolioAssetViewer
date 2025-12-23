@@ -374,6 +374,17 @@ app.add_middleware(
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+@app.get("/")
+async def root():
+    """Root endpoint - redirect to login page info"""
+    return {
+        "app": "Portfolio Tracker",
+        "status": "running",
+        "frontend": "Deploy frontend separately or access API at /api/*",
+        "api_docs": "/docs",
+        "health": "/api/auth/me"
+    }
+
 @app.on_event("startup")
 async def startup():
     await init_db()
