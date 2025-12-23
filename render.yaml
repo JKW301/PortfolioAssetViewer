@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: portfolio-tracker
+    runtime: python
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+      cd frontend && npm install && npm run build && cd ..
+    startCommand: cd backend && uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: BINANCE_API_KEY
+        value: BtXraKHkudYowil8u1ez4SYjg8BZFiWBflZKmc7P7zqngPJ4uqQXpV2nujCAX0ia
+
+databases:
+  - name: portfolio-db
+    plan: free
+    databaseName: portfolio_tracker
+    user: portfolio_user
