@@ -44,6 +44,9 @@ app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
 # Define Models
+class SessionIdRequest(BaseModel):
+    session_id: str
+
 class CryptoAsset(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
