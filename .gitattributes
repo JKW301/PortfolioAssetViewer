@@ -1,0 +1,2 @@
+frontend/build/** -diff linguist-generated=false
+frontend/build/** filter=lfs diff=lfs merge=lfs -text
