@@ -20,7 +20,7 @@ function History() {
   const loadSnapshots = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API}/history/snapshots`);
+      const res = await axios.get(`${API}/history/snapshots`, { withCredentials: true });
       setSnapshots(res.data.reverse());
     } catch (error) {
       console.error('Error loading snapshots:', error);
