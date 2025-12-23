@@ -376,24 +376,47 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Serve static files from frontend build
+if FRONTEND_BUILD.exists():
+    app.mount("/static", StaticFiles(directory=str(FRONTEND_BUILD / "static")), name="static")
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    """Root endpoint - serve info page"""
-    html_path = ROOT_DIR / "index.html"
-    if html_path.exists():
-        return html_path.read_text()
-    return """
+    """Serve frontend React app"""
+    index_path = FRONTEND_BUILD / "index.html"
+    if index_path.exists():
+        return FileResponse(index_path)
+    return HTMLResponse("""
     <html>
         <body style="font-family: sans-serif; text-align: center; padding: 50px; background: #09090B; color: white;">
-            <h1>Portfolio Tracker Backend</h1>
-            <p>✅ Backend Running</p>
+            <h1>Portfolio Tracker</h1>
+            <p>Backend Running ✅</p>
             <p><a href="/docs" style="color: #10B981;">API Documentation</a></p>
         </body>
     </html>
-    """
+    """)
+
+@app.get("/{full_path:path}", response_class=HTMLResponse)
+async def serve_frontend(full_path: str):
+    """Catch-all route for React Router"""
+    # Check if it's an API route
+    if full_path.startswith("api/") or full_path == "docs" or full_path == "openapi.json":
+        raise HTTPException(status_code=404)
+    
+    # Serve static files
+    file_path = FRONTEND_BUILD / full_path
+    if file_path.exists() and file_path.is_file():
+        return FileResponse(file_path)
+    
+    # Otherwise serve index.html for React Router
+    index_path = FRONTEND_BUILD / "index.html"
+    if index_path.exists():
+        return FileResponse(index_path)
+    
+    raise HTTPException(status_code=404)
 
 @app.on_event("startup")
 async def startup():
