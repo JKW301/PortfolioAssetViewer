@@ -4,8 +4,8 @@
 
 Tous les fichiers nécessaires sont déjà configurés :
 - ✅ `Procfile` - Commande de démarrage
-- ✅ `runtime.txt` - Python 3.11
-- ✅ `requirements.txt` - Dépendances à la racine
+- ✅ `.python-version` - Python 3.11 (recommandé par Heroku)
+- ✅ `requirements.txt` - Dépendances à la racine (sans bibliothèques privées)
 - ✅ `.slugignore` - Exclusion fichiers inutiles
 
 ## 🚀 Déploiement en 3 Étapes
