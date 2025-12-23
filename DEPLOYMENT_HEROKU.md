@@ -14,24 +14,36 @@ Ce guide vous explique comment déployer votre application Portfolio Tracker sur
 /app/
 ├── backend/          # API FastAPI
 ├── frontend/         # Application React
-├── Procfile         # Configuration Heroku (à créer)
-├── runtime.txt      # Version Python (à créer)
-└── requirements.txt # Dépendances (déjà généré)
+├── Procfile         # Configuration Heroku ✅
+├── runtime.txt      # Version Python ✅
+├── requirements.txt # Dépendances Python (racine) ✅
+└── .slugignore      # Fichiers à exclure du déploiement ✅
 ```
+
+**IMPORTANT** : Le fichier `requirements.txt` DOIT être à la racine pour Heroku, pas dans `backend/`.
 
 ## Étapes de Déploiement
 
-### 1. Préparer les fichiers Heroku
+### 1. Fichiers Heroku (Déjà Créés)
 
-Créez un fichier `Procfile` à la racine :
+Les fichiers suivants sont déjà configurés :
+
+**Procfile** :
 ```
-web: cd backend && uvicorn server:app --host 0.0.0.0 --port $PORT
+web: cd backend && uvicorn server:app --host 0.0.0.0 --port $PORT --workers 1
 ```
 
-Créez un fichier `runtime.txt` :
+**runtime.txt** :
 ```
 python-3.11.0
 ```
+
+**requirements.txt** (à la racine) :
+- Copié depuis `backend/requirements.txt`
+- Contient toutes les dépendances Python
+
+**.slugignore** :
+- Exclut les fichiers inutiles du build (tests, node_modules, etc.)
 
 ### 2. Configuration MongoDB
 
