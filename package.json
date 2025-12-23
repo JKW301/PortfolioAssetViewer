@@ -1,0 +1,13 @@
+{
+  "name": "portfolio-tracker",
+  "version": "1.0.0",
+  "description": "Portfolio Tracker - Crypto, Stocks, Coins",
+  "engines": {
+    "node": "18.x",
+    "yarn": "1.x"
+  },
+  "scripts": {
+    "build": "cd frontend && yarn install && yarn build",
+    "postinstall": "cd frontend && yarn install"
+  }
+}
