@@ -29,8 +29,18 @@ from auth_pg import exchange_session_id, get_current_user, logout_user, User
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# Frontend build directory
-FRONTEND_BUILD = ROOT_DIR.parent / "frontend" / "build"
+# Try multiple possible locations for frontend build
+FRONTEND_BUILD = None
+possible_paths = [
+    Path("/app/frontend/build"),
+    ROOT_DIR.parent / "frontend" / "build",
+    Path("../frontend/build"),
+]
+
+for path in possible_paths:
+    if path.exists() and (path / "index.html").exists():
+        FRONTEND_BUILD = path
+        break
 
 binance_api_key = os.environ.get('BINANCE_API_KEY', 'BtXraKHkudYowil8u1ez4SYjg8BZFiWBflZKmc7P7zqngPJ4uqQXpV2nujCAX0ia')
 binance_client = None
@@ -376,49 +386,126 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve static files from frontend build
-if FRONTEND_BUILD.exists():
+# Mount static files if build exists
+if FRONTEND_BUILD and (FRONTEND_BUILD / "static").exists():
     app.mount("/static", StaticFiles(directory=str(FRONTEND_BUILD / "static")), name="static")
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-@app.get("/", response_class=HTMLResponse)
-async def root():
-    """Serve frontend React app"""
-    index_path = FRONTEND_BUILD / "index.html"
-    if index_path.exists():
-        return FileResponse(index_path)
-    return HTMLResponse("""
-    <html>
-        <body style="font-family: sans-serif; text-align: center; padding: 50px; background: #09090B; color: white;">
-            <h1>Portfolio Tracker</h1>
-            <p>Backend Running ✅</p>
-            <p><a href="/docs" style="color: #10B981;">API Documentation</a></p>
-        </body>
-    </html>
-    """)
-
-@app.get("/{full_path:path}", response_class=HTMLResponse)
-async def serve_frontend(full_path: str):
-    """Catch-all route for React Router"""
-    # Check if it's an API route
-    if full_path.startswith("api/") or full_path == "docs" or full_path == "openapi.json":
-        raise HTTPException(status_code=404)
-    
-    # Serve static files
-    file_path = FRONTEND_BUILD / full_path
-    if file_path.exists() and file_path.is_file():
-        return FileResponse(file_path)
-    
-    # Otherwise serve index.html for React Router
-    index_path = FRONTEND_BUILD / "index.html"
-    if index_path.exists():
-        return FileResponse(index_path)
-    
-    raise HTTPException(status_code=404)
-
 @app.on_event("startup")
 async def startup():
     await init_db()
+    if FRONTEND_BUILD:
+        logger.info(f"Frontend build found at: {FRONTEND_BUILD}")
+    else:
+        logger.warning("Frontend build not found - serving API only")
     logger.info("Database tables created successfully")
+
+# Serve React app
+@app.get("/")
+async def root():
+    if FRONTEND_BUILD:
+        index_path = FRONTEND_BUILD / "index.html"
+        if index_path.exists():
+            return FileResponse(index_path)
+    
+    # Fallback if no build
+    return HTMLResponse(content="""
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Tracker - Déploiement Requis</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 48px;
+            max-width: 600px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        h1 { color: #1a202c; font-size: 28px; margin-bottom: 16px; }
+        p { color: #4a5568; line-height: 1.6; margin-bottom: 12px; }
+        .status { color: #e53e3e; font-weight: 600; font-size: 18px; margin: 24px 0; }
+        .solution {
+            background: #f7fafc;
+            border-left: 4px solid #4299e1;
+            padding: 16px;
+            margin: 24px 0;
+            text-align: left;
+        }
+        .solution strong { color: #2d3748; display: block; margin-bottom: 8px; }
+        code {
+            background: #2d3748;
+            color: #48bb78;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        a {
+            display: inline-block;
+            background: #4299e1;
+            color: white;
+            padding: 12px 32px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-top: 24px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        a:hover { background: #3182ce; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🚀 Portfolio Tracker</h1>
+        <div class="status">❌ Frontend non déployé</div>
+        <p>Le backend API fonctionne correctement, mais le frontend React n'est pas disponible sur Heroku.</p>
+        
+        <div class="solution">
+            <strong>Solution :</strong>
+            <p>Déployez le frontend séparément sur <strong>Netlify</strong> ou <strong>Vercel</strong> (gratuit) :</p>
+            <br>
+            <p>1. Connectez votre repo Git à Netlify</p>
+            <p>2. Build directory: <code>frontend/build</code></p>
+            <p>3. Variable d'environnement: <code>REACT_APP_BACKEND_URL=https://patrimoine-090973d2f6ba.herokuapp.com</code></p>
+        </div>
+        
+        <p><strong>Ou utilisez directement l'API :</strong></p>
+        <a href="/docs">📚 Documentation API</a>
+    </div>
+</body>
+</html>
+    """, status_code=200)
+
+@app.get("/{full_path:path}")
+async def catch_all(full_path: str):
+    # Skip API routes
+    if full_path.startswith("api/") or full_path in ["docs", "openapi.json", "redoc"]:
+        raise HTTPException(status_code=404)
+    
+    # Serve static files
+    if FRONTEND_BUILD:
+        file_path = FRONTEND_BUILD / full_path
+        if file_path.exists() and file_path.is_file():
+            return FileResponse(file_path)
+        
+        # Serve index.html for client-side routing
+        index_path = FRONTEND_BUILD / "index.html"
+        if index_path.exists():
+            return FileResponse(index_path)
+    
+    raise HTTPException(status_code=404)
