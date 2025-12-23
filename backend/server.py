@@ -381,7 +381,7 @@ app.include_router(api_router)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', 'https://patrimoine-090973d2f6ba.herokuapp.com,*').split(','),
+    allow_origins=os.environ.get('CORS_ORIGINS', 'https://portfolio-tracker.onrender.com,http://localhost:3000,*').split(','),
     allow_methods=["*"],
     allow_headers=["*"],
 )
