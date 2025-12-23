@@ -207,6 +207,15 @@ function Dashboard() {
               <BarChart3 className="w-4 h-4 mr-2" />
               Historique
             </Button>
+            <Button 
+              onClick={handleLogout} 
+              variant="outline" 
+              className="border-[#27272A] text-white hover:bg-[#18181B]"
+              data-testid="logout-button"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Déconnexion
+            </Button>
           </div>
         </div>
 
