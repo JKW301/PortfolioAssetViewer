@@ -62,7 +62,7 @@ function Dashboard() {
     
     for (const crypto of cryptosList) {
       try {
-        const res = await axios.get(`${API}/crypto/${crypto.id}/price`);
+        const res = await axios.get(`${API}/crypto/${crypto.id}/price`, { withCredentials: true });
         newPrices[`crypto-${crypto.id}`] = res.data;
       } catch (error) {
         console.error(`Error loading price for ${crypto.symbol}:`, error);
@@ -71,7 +71,7 @@ function Dashboard() {
 
     for (const stock of stocksList) {
       try {
-        const res = await axios.get(`${API}/stocks/${stock.id}/price`);
+        const res = await axios.get(`${API}/stocks/${stock.id}/price`, { withCredentials: true });
         newPrices[`stock-${stock.id}`] = res.data;
       } catch (error) {
         console.error(`Error loading price for ${stock.symbol}:`, error);
@@ -80,7 +80,7 @@ function Dashboard() {
 
     for (const coin of coinsList) {
       try {
-        const res = await axios.get(`${API}/coins/${coin.id}/price`);
+        const res = await axios.get(`${API}/coins/${coin.id}/price`, { withCredentials: true });
         newPrices[`coin-${coin.id}`] = res.data;
       } catch (error) {
         console.error(`Error loading price for ${coin.name}:`, error);
