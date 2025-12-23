@@ -54,6 +54,7 @@ class CryptoAsset(BaseModel):
     symbol: str
     quantity: float
     purchase_price: float
+    user_id: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class CryptoAssetCreate(BaseModel):
