@@ -194,10 +194,11 @@ async def get_coin_price_eur(url: str, css_selector: str) -> Optional[float]:
 @api_router.post("/crypto", response_model=CryptoAsset)
 async def create_crypto(asset: CryptoAssetCreate, request: Request):
     current_user = await get_current_user(request, db)
-    asset_obj = CryptoAsset(**asset.model_dump())
+    asset_data = asset.model_dump()
+    asset_data['user_id'] = current_user.user_id
+    asset_obj = CryptoAsset(**asset_data)
     doc = asset_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
-    doc['user_id'] = current_user.user_id
     await db.crypto_assets.insert_one(doc)
     return asset_obj
 
