@@ -21,7 +21,9 @@ load_dotenv(ROOT_DIR / '.env')
 # MongoDB connection
 mongo_url = os.environ.get('MONGO_URL')
 if not mongo_url:
-    logger.error("MONGO_URL environment variable is not set!")
+    print("ERROR: MONGO_URL environment variable is not set!")
+    print("Please configure MONGO_URL in Heroku Settings > Config Vars")
+    print("See HEROKU_FIX_NOW.md for detailed instructions")
     raise ValueError("MONGO_URL must be set in environment variables. Please configure it in Heroku settings.")
 
 db_name = os.environ.get('DB_NAME', 'portfolio_tracker')
