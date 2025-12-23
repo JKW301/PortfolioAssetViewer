@@ -242,15 +242,18 @@ async def get_crypto_current_price(crypto_id: str, request: Request):
 # Stock endpoints
 @api_router.post("/stocks", response_model=StockAsset)
 async def create_stock(asset: StockAssetCreate, request: Request):
-    asset_obj = StockAsset(**asset.model_dump())
+    current_user = await get_current_user(request, db)
+        asset_obj = StockAsset(**asset.model_dump())
     doc = asset_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
+    doc[\'user_id\'] = current_user.user_id
     await db.stock_assets.insert_one(doc)
     return asset_obj
 
 @api_router.get("/stocks", response_model=List[StockAsset])
 async def get_stocks(request: Request):
-    stocks = await db.stock_assets.find({}, {"_id": 0}).to_list(1000)
+    current_user = await get_current_user(request, db)
+    stocks = await db.stock_assets.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(1000)
     for stock in stocks:
         if isinstance(stock['created_at'], str):
             stock['created_at'] = datetime.fromisoformat(stock['created_at'])
@@ -258,14 +261,21 @@ async def get_stocks(request: Request):
 
 @api_router.delete("/stocks/{stock_id}")
 async def delete_stock(stock_id: str, request: Request):
-    result = await db.stock_assets.delete_one({"id": stock_id})
+    current_user = await get_current_user(request, db)
+    result = await db.stock_assets.delete_one({"id": stock_id, "user_id": current_user.user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Stock not found")
+    return {"message": "Deleted successfully"}
+
+
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Stock not found")
     return {"message": "Deleted successfully"}
 
 @api_router.get("/stocks/{stock_id}/price")
 async def get_stock_current_price(stock_id: str, request: Request):
-    stock = await db.stock_assets.find_one({"id": stock_id}, {"_id": 0})
+    current_user = await get_current_user(request, db)
+    stock = await db.stock_assets.find_one({"id": stock_id, "user_id": current_user.user_id},({"id": stock_id}, {"_id": 0})
     if not stock:
         raise HTTPException(status_code=404, detail="Stock not found")
     
