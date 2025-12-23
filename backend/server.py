@@ -337,9 +337,10 @@ async def get_coin_current_price(coin_id: str, request: Request):
 # Portfolio overview
 @api_router.get("/portfolio/overview")
 async def get_portfolio_overview(request: Request):
-    cryptos = await db.crypto_assets.find({}, {"_id": 0}).to_list(1000)
-    stocks = await db.stock_assets.find({}, {"_id": 0}).to_list(1000)
-    coins = await db.coin_assets.find({}, {"_id": 0}).to_list(1000)
+    current_user = await get_current_user(request, db)
+    cryptos = await db.crypto_assets.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(1000)
+    stocks = await db.stock_assets.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(1000)
+    coins = await db.coin_assets.find({"user_id": current_user.user_id}, {"_id": 0}).to_list(1000)
     
     crypto_value = 0
     for crypto in cryptos:
@@ -374,12 +375,14 @@ async def get_portfolio_overview(request: Request):
 # History endpoints
 @api_router.post("/history/snapshot")
 async def create_snapshot(request: Request):
-    overview = await get_portfolio_overview()
+    current_user = await get_current_user(request, db)
+    overview = await get_portfolio_overview(request)
     snapshot = HistorySnapshot(
         total_value_eur=overview['total_value_eur'],
         crypto_value_eur=overview['crypto_value_eur'],
         stocks_value_eur=overview['stocks_value_eur'],
-        coins_value_eur=overview['coins_value_eur']
+        coins_value_eur=overview['coins_value_eur'],
+        user_id=current_user.user_id
     )
     doc = snapshot.model_dump()
     doc['timestamp'] = doc['timestamp'].isoformat()
@@ -388,7 +391,8 @@ async def create_snapshot(request: Request):
 
 @api_router.get("/history/snapshots", response_model=List[HistorySnapshot])
 async def get_snapshots(request: Request):
-    snapshots = await db.history_snapshots.find({}, {"_id": 0}).sort('timestamp', -1).to_list(1000)
+    current_user = await get_current_user(request, db)
+    snapshots = await db.history_snapshots.find({"user_id": current_user.user_id}, {"_id": 0}).sort('timestamp', -1).to_list(1000)
     for snapshot in snapshots:
         if isinstance(snapshot['timestamp'], str):
             snapshot['timestamp'] = datetime.fromisoformat(snapshot['timestamp'])
