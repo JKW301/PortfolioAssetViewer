@@ -276,7 +276,7 @@ async def delete_stock(stock_id: str, request: Request):
 @api_router.get("/stocks/{stock_id}/price")
 async def get_stock_current_price(stock_id: str, request: Request):
     current_user = await get_current_user(request, db)
-    stock = await db.stock_assets.find_one({"id": stock_id, "user_id": current_user.user_id},({"id": stock_id}, {"_id": 0})
+    stock = await db.stock_assets.find_one({"id": stock_id, "user_id": current_user.user_id}, {"_id": 0})
     if not stock:
         raise HTTPException(status_code=404, detail="Stock not found")
     
