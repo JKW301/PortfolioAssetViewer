@@ -51,14 +51,13 @@ yarn start
 
 ## Déploiement
 
-Consultez [DEPLOYMENT_HEROKU.md](./DEPLOYMENT_HEROKU.md) pour les instructions de déploiement sur Heroku.
+Consultez [RENDER_DEPLOY.md](./RENDER_DEPLOY.md) pour les instructions de déploiement sur Render.
 
 ## Configuration
 
 ### Variables d'environnement Backend (.env)
 ```
-MONGO_URL=mongodb://localhost:27017
-DB_NAME=portfolio_tracker
+DATABASE_URL=postgresql://user:password@localhost:5432/portfolio_tracker
 CORS_ORIGINS=*
 BINANCE_API_KEY=votre_clé_api
 ```

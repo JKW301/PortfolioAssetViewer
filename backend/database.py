@@ -4,16 +4,19 @@ from sqlalchemy import String, Float, DateTime, Text
 from datetime import datetime, timezone
 import os
 
-# Database URL from environment - try both DATABASE_URL and JAWSDB_MARIA_URL
-DATABASE_URL = os.environ.get('DATABASE_URL') or os.environ.get('JAWSDB_MARIA_URL') or os.environ.get('JAWSDB_URL')
+# Database URL from environment
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if not DATABASE_URL:
     print("ERROR: No database URL found!")
     print("Please provision a database on Render or add DATABASE_URL variable")
-    raise ValueError("DATABASE_URL, JAWSDB_MARIA_URL or JAWSDB_URL must be set")
+    raise ValueError("DATABASE_URL must be set")
 
 # Convert database URL to use async drivers
-if DATABASE_URL.startswith('mysql://'):
+if DATABASE_URL.startswith('sqlite'):
+    # SQLite: use aiosqlite
+    DATABASE_URL = DATABASE_URL.replace('sqlite:///', 'sqlite+aiosqlite:///', 1)
+elif DATABASE_URL.startswith('mysql://'):
     # MySQL: use aiomysql
     DATABASE_URL = DATABASE_URL.replace('mysql://', 'mysql+aiomysql://', 1)
 elif DATABASE_URL.startswith('postgres://'):

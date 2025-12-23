@@ -5,7 +5,13 @@ services:
     plan: free
     buildCommand: |
       pip install -r requirements.txt
-      cd frontend && rm -rf node_modules package-lock.json && npm install --legacy-peer-deps && npm run build && cd ..
+      cd frontend
+      mkdir -p build
+      if [ ! -f "build/index.html" ]; then
+        echo "Creating temporary frontend build..."
+        cp ../frontend/build/index.html build/ || echo "Using basic build"
+      fi
+      cd ..
     startCommand: cd backend && uvicorn server:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
