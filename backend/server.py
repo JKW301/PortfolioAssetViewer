@@ -218,8 +218,9 @@ async def delete_crypto(crypto_id: str, request: Request):
     return {"message": "Deleted successfully"}
 
 @api_router.get("/crypto/{crypto_id}/price")
-async def get_crypto_current_price(crypto_id: str):
-    crypto = await db.crypto_assets.find_one({"id": crypto_id}, {"_id": 0})
+async def get_crypto_current_price(crypto_id: str, request: Request):
+    current_user = await get_current_user(request, db)
+    crypto = await db.crypto_assets.find_one({"id": crypto_id, "user_id": current_user.user_id}, {"_id": 0})
     if not crypto:
         raise HTTPException(status_code=404, detail="Crypto not found")
     
