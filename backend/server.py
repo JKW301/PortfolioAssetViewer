@@ -70,6 +70,7 @@ class StockAsset(BaseModel):
     symbol: str
     quantity: float
     purchase_price: float
+    user_id: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class StockAssetCreate(BaseModel):
@@ -85,6 +86,7 @@ class CoinAsset(BaseModel):
     url: str
     css_selector: str
     quantity: float
+    user_id: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class CoinAssetCreate(BaseModel):
@@ -101,6 +103,7 @@ class HistorySnapshot(BaseModel):
     crypto_value_eur: float
     stocks_value_eur: float
     coins_value_eur: float
+    user_id: str
 
 # Helper functions for dependency injection
 async def get_db_dependency(request: Request):
