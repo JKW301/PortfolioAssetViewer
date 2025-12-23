@@ -241,7 +241,7 @@ async def get_crypto_current_price(crypto_id: str, request: Request):
 
 # Stock endpoints
 @api_router.post("/stocks", response_model=StockAsset)
-async def create_stock(asset: StockAssetCreate):
+async def create_stock(asset: StockAssetCreate, request: Request):
     asset_obj = StockAsset(**asset.model_dump())
     doc = asset_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
@@ -249,7 +249,7 @@ async def create_stock(asset: StockAssetCreate):
     return asset_obj
 
 @api_router.get("/stocks", response_model=List[StockAsset])
-async def get_stocks():
+async def get_stocks(request: Request):
     stocks = await db.stock_assets.find({}, {"_id": 0}).to_list(1000)
     for stock in stocks:
         if isinstance(stock['created_at'], str):
@@ -257,14 +257,14 @@ async def get_stocks():
     return stocks
 
 @api_router.delete("/stocks/{stock_id}")
-async def delete_stock(stock_id: str):
+async def delete_stock(stock_id: str, request: Request):
     result = await db.stock_assets.delete_one({"id": stock_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Stock not found")
     return {"message": "Deleted successfully"}
 
 @api_router.get("/stocks/{stock_id}/price")
-async def get_stock_current_price(stock_id: str):
+async def get_stock_current_price(stock_id: str, request: Request):
     stock = await db.stock_assets.find_one({"id": stock_id}, {"_id": 0})
     if not stock:
         raise HTTPException(status_code=404, detail="Stock not found")
@@ -281,7 +281,7 @@ async def get_stock_current_price(stock_id: str):
 
 # Coin endpoints
 @api_router.post("/coins", response_model=CoinAsset)
-async def create_coin(asset: CoinAssetCreate):
+async def create_coin(asset: CoinAssetCreate, request: Request):
     asset_obj = CoinAsset(**asset.model_dump())
     doc = asset_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
@@ -289,7 +289,7 @@ async def create_coin(asset: CoinAssetCreate):
     return asset_obj
 
 @api_router.get("/coins", response_model=List[CoinAsset])
-async def get_coins():
+async def get_coins(request: Request):
     coins = await db.coin_assets.find({}, {"_id": 0}).to_list(1000)
     for coin in coins:
         if isinstance(coin['created_at'], str):
@@ -297,14 +297,14 @@ async def get_coins():
     return coins
 
 @api_router.delete("/coins/{coin_id}")
-async def delete_coin(coin_id: str):
+async def delete_coin(coin_id: str, request: Request):
     result = await db.coin_assets.delete_one({"id": coin_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Coin not found")
     return {"message": "Deleted successfully"}
 
 @api_router.get("/coins/{coin_id}/price")
-async def get_coin_current_price(coin_id: str):
+async def get_coin_current_price(coin_id: str, request: Request):
     coin = await db.coin_assets.find_one({"id": coin_id}, {"_id": 0})
     if not coin:
         raise HTTPException(status_code=404, detail="Coin not found")
@@ -321,7 +321,7 @@ async def get_coin_current_price(coin_id: str):
 
 # Portfolio overview
 @api_router.get("/portfolio/overview")
-async def get_portfolio_overview():
+async def get_portfolio_overview(request: Request):
     cryptos = await db.crypto_assets.find({}, {"_id": 0}).to_list(1000)
     stocks = await db.stock_assets.find({}, {"_id": 0}).to_list(1000)
     coins = await db.coin_assets.find({}, {"_id": 0}).to_list(1000)
@@ -358,7 +358,7 @@ async def get_portfolio_overview():
 
 # History endpoints
 @api_router.post("/history/snapshot")
-async def create_snapshot():
+async def create_snapshot(request: Request):
     overview = await get_portfolio_overview()
     snapshot = HistorySnapshot(
         total_value_eur=overview['total_value_eur'],
@@ -372,7 +372,7 @@ async def create_snapshot():
     return snapshot
 
 @api_router.get("/history/snapshots", response_model=List[HistorySnapshot])
-async def get_snapshots():
+async def get_snapshots(request: Request):
     snapshots = await db.history_snapshots.find({}, {"_id": 0}).sort('timestamp', -1).to_list(1000)
     for snapshot in snapshots:
         if isinstance(snapshot['timestamp'], str):
