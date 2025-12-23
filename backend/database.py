@@ -9,12 +9,19 @@ DATABASE_URL = os.environ.get('DATABASE_URL') or os.environ.get('JAWSDB_MARIA_UR
 
 if not DATABASE_URL:
     print("ERROR: No database URL found!")
-    print("Please provision JawsDB Maria add-on on Heroku")
+    print("Please provision a database on Render or add DATABASE_URL variable")
     raise ValueError("DATABASE_URL, JAWSDB_MARIA_URL or JAWSDB_URL must be set")
 
-# Fix MySQL URL format for SQLAlchemy (mysql:// to mysql+aiomysql://)
+# Convert database URL to use async drivers
 if DATABASE_URL.startswith('mysql://'):
+    # MySQL: use aiomysql
     DATABASE_URL = DATABASE_URL.replace('mysql://', 'mysql+aiomysql://', 1)
+elif DATABASE_URL.startswith('postgres://'):
+    # PostgreSQL: use asyncpg
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+asyncpg://', 1)
+elif DATABASE_URL.startswith('postgresql://') and 'asyncpg' not in DATABASE_URL:
+    # PostgreSQL without asyncpg: add it
+    DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+asyncpg://', 1)
 
 # Create async engine
 engine = create_async_engine(DATABASE_URL, echo=False)
