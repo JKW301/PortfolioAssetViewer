@@ -1,11 +1,10 @@
-frontend/node_modules/
 tests/
 test_reports/
-*.md
 .emergent/
 .git/
-.gitignore
 design_guidelines.json
 backend_test.py
 test_result.md
 auth_testing.md
+*.md
+!README.md
