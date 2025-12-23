@@ -4,14 +4,13 @@ from sqlalchemy import String, Float, DateTime, Text
 from datetime import datetime, timezone
 import os
 
-# Database URL from environment
-DATABASE_URL = os.environ.get('DATABASE_URL')
+# Database URL from environment - try both DATABASE_URL and JAWSDB_MARIA_URL
+DATABASE_URL = os.environ.get('DATABASE_URL') or os.environ.get('JAWSDB_MARIA_URL') or os.environ.get('JAWSDB_URL')
 
 if not DATABASE_URL:
-    print("ERROR: DATABASE_URL environment variable is not set!")
+    print("ERROR: No database URL found!")
     print("Please provision JawsDB Maria add-on on Heroku")
-    print("See JAWSDB_HEROKU.md for detailed instructions")
-    raise ValueError("DATABASE_URL must be set in environment variables")
+    raise ValueError("DATABASE_URL, JAWSDB_MARIA_URL or JAWSDB_URL must be set")
 
 # Fix MySQL URL format for SQLAlchemy (mysql:// to mysql+aiomysql://)
 if DATABASE_URL.startswith('mysql://'):
