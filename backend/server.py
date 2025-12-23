@@ -375,16 +375,21 @@ app.add_middleware(
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def root():
-    """Root endpoint - redirect to login page info"""
-    return {
-        "app": "Portfolio Tracker",
-        "status": "running",
-        "frontend": "Deploy frontend separately or access API at /api/*",
-        "api_docs": "/docs",
-        "health": "/api/auth/me"
-    }
+    """Root endpoint - serve info page"""
+    html_path = ROOT_DIR / "index.html"
+    if html_path.exists():
+        return html_path.read_text()
+    return """
+    <html>
+        <body style="font-family: sans-serif; text-align: center; padding: 50px; background: #09090B; color: white;">
+            <h1>Portfolio Tracker Backend</h1>
+            <p>✅ Backend Running</p>
+            <p><a href="/docs" style="color: #10B981;">API Documentation</a></p>
+        </body>
+    </html>
+    """
 
 @app.on_event("startup")
 async def startup():
