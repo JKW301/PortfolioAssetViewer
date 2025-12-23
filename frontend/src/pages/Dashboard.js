@@ -97,7 +97,7 @@ function Dashboard() {
         ...cryptoForm,
         quantity: parseFloat(cryptoForm.quantity),
         purchase_price: parseFloat(cryptoForm.purchase_price)
-      });
+      }, { withCredentials: true });
       toast.success('Cryptomonnaie ajoutée avec succès');
       setCryptoDialog(false);
       setCryptoForm({ name: '', symbol: '', quantity: '', purchase_price: '' });
@@ -114,7 +114,7 @@ function Dashboard() {
         ...stockForm,
         quantity: parseFloat(stockForm.quantity),
         purchase_price: parseFloat(stockForm.purchase_price)
-      });
+      }, { withCredentials: true });
       toast.success('Action ajoutée avec succès');
       setStockDialog(false);
       setStockForm({ name: '', symbol: '', quantity: '', purchase_price: '' });
@@ -130,7 +130,7 @@ function Dashboard() {
       await axios.post(`${API}/coins`, {
         ...coinForm,
         quantity: parseFloat(coinForm.quantity)
-      });
+      }, { withCredentials: true });
       toast.success('Pièce ajoutée avec succès');
       setCoinDialog(false);
       setCoinForm({ name: '', url: '', css_selector: '', quantity: '' });
@@ -142,7 +142,7 @@ function Dashboard() {
 
   const handleDelete = async (type, id) => {
     try {
-      await axios.delete(`${API}/${type}/${id}`);
+      await axios.delete(`${API}/${type}/${id}`, { withCredentials: true });
       toast.success('Élément supprimé avec succès');
       loadData();
     } catch (error) {
@@ -152,10 +152,20 @@ function Dashboard() {
 
   const handleSnapshot = async () => {
     try {
-      await axios.post(`${API}/history/snapshot`);
+      await axios.post(`${API}/history/snapshot`, {}, { withCredentials: true });
       toast.success('Instantané créé avec succès');
     } catch (error) {
       toast.error('Erreur lors de la création de l\'instantané');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await axios.post(`${API}/auth/logout`, {}, { withCredentials: true });
+      toast.success('Déconnexion réussie');
+      navigate('/login');
+    } catch (error) {
+      toast.error('Erreur lors de la déconnexion');
     }
   };
 
