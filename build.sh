@@ -77,11 +77,23 @@ cat > frontend/build/index.html << 'EOF'
         };
 
         // Simple login handler
-        function handleLogin(e) {
+        async function handleLogin(e) {
             e.preventDefault();
             const statusEl = document.getElementById('status');
-            statusEl.innerHTML = '🔄 Redirecting to login...';
-            window.location.href = '/api/auth/login';
+            statusEl.innerHTML = '🔄 Getting login URL...';
+            
+            try {
+                // Get the auth URL from backend
+                const response = await fetch('/api/auth/login');
+                const data = await response.json();
+                
+                statusEl.innerHTML = '🔄 Redirecting to login...';
+                // Redirect to the OAuth URL
+                window.location.href = data.auth_url;
+            } catch (error) {
+                console.error('Login failed:', error);
+                statusEl.innerHTML = '❌ Login failed - check console';
+            }
         }
 
         // Check if user is already logged in

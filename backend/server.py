@@ -167,6 +167,38 @@ async def get_coin_price_eur(url: str, css_selector: str) -> Optional[float]:
         return None
 
 # Auth routes
+@api_router.get("/auth/login")
+async def login():
+    """Redirect to Emergent Auth OAuth login"""
+    auth_url = "https://demobackend.emergentagent.com/auth/v1/env/oauth/google"
+    return {"auth_url": auth_url, "message": "Redirect to this URL to login"}
+
+@api_router.get("/auth/callback")
+async def auth_callback(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
+    """Handle OAuth callback and create session"""
+    session_id = request.query_params.get('session_id')
+    if not session_id:
+        raise HTTPException(status_code=400, detail="Missing session_id")
+    
+    try:
+        result = await exchange_session_id(session_id, db)
+        response.set_cookie(
+            key="session_token", 
+            value=result['session_token'], 
+            httponly=True, 
+            secure=True, 
+            samesite="none", 
+            max_age=7*24*60*60, 
+            path="/"
+        )
+        # Redirect to dashboard after successful login
+        return HTMLResponse("""
+            <script>window.location.href = '/dashboard';</script>
+            <p>Login successful, redirecting...</p>
+        """)
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+
 @api_router.post("/auth/session")
 async def create_session(req: SessionIdRequest, response: Response, db: AsyncSession = Depends(get_db)):
     result = await exchange_session_id(req.session_id, db)
