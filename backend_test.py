@@ -245,7 +245,18 @@ def main():
     print("🚀 Starting Investment Tracker API Tests")
     print("=" * 50)
     
-    tester = InvestmentTrackerTester()
+    # Use the session token from the created test user
+    session_token = "test_session_1766484113166"
+    tester = InvestmentTrackerTester(session_token=session_token)
+    
+    # Test authentication first
+    print("\n🔐 Testing Authentication...")
+    auth_success, auth_data = tester.test_auth_me()
+    if not auth_success:
+        print("❌ Authentication failed - stopping tests")
+        return 1
+    
+    print(f"✅ Authenticated as: {auth_data.get('name', 'Unknown')} ({auth_data.get('email', 'No email')})")
     
     # Test portfolio overview first
     print("\n📊 Testing Portfolio Overview...")
