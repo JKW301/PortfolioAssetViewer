@@ -101,6 +101,44 @@ class HistorySnapshot(BaseModel):
     stocks_value_eur: float
     coins_value_eur: float
 
+# Helper functions for dependency injection
+async def get_db_dependency(request: Request):
+    return db
+
+# Auth routes
+@api_router.post(\"/auth/session\")
+async def create_session(req: SessionIdRequest, response: Response):
+    \"\"\"Exchange session_id for session_token and user data\"\"\"
+    result = await exchange_session_id(req.session_id, db)
+    
+    # Set httpOnly cookie
+    response.set_cookie(
+        key=\"session_token\",
+        value=result['session_token'],
+        httponly=True,
+        secure=True,
+        samesite=\"none\",
+        max_age=7*24*60*60,  # 7 days
+        path=\"/\"
+    )
+    
+    return result
+
+@api_router.get(\"/auth/me\", response_model=User)
+async def get_me(request: Request):
+    \"\"\"Get current user from session\"\"\"
+    return await get_current_user(request, db)
+
+@api_router.post(\"/auth/logout\")
+async def logout(request: Request, response: Response):
+    \"\"\"Logout user\"\"\"
+    session_token = request.cookies.get('session_token')
+    if session_token:
+        await logout_user(session_token, db)
+    
+    response.delete_cookie(\"session_token\", path=\"/\")
+    return {\"message\": \"Logged out successfully\"}
+
 # Helper functions
 def get_eur_usd_rate():
     try:
