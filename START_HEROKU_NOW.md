@@ -1,53 +1,80 @@
-# 🚀 DÉMARRAGE RAPIDE HEROKU - 5 MINUTES
+# 🚀 DÉMARRAGE RAPIDE HEROKU - 2 MINUTES
 
-## ⚡ Actions Immédiates
+## ⚡ JawsDB Maria Déjà Installé !
 
-### 1️⃣ MongoDB Atlas (3 min)
-```
-🌐 https://www.mongodb.com/cloud/atlas
-1. Inscrivez-vous (gratuit)
-2. Créez cluster M0 (gratuit)
-3. Créez user : portfoliouser + password fort
-4. Network Access → Add IP → 0.0.0.0/0
-5. Copiez URL : mongodb+srv://portfoliouser:PASSWORD@cluster.mongodb.net/
-```
+Si vous avez cliqué **"Submit Order Form"** dans Heroku, la base de données est DÉJÀ configurée ! ✅
 
-### 2️⃣ Heroku Config (2 min)
-```
-🌐 https://dashboard.heroku.com/apps/patrimoine-090973d2f6ba/settings
+---
 
-Cliquez "Reveal Config Vars"
-Ajoutez :
+## 📋 2 Étapes Restantes
 
-MONGO_URL          = mongodb+srv://portfoliouser:VotreMotDePasse@cluster.mongodb.net/
-DB_NAME            = portfolio_tracker
-CORS_ORIGINS       = https://patrimoine-090973d2f6ba.herokuapp.com
-BINANCE_API_KEY    = BtXraKHkudYowil8u1ez4SYjg8BZFiWBflZKmc7P7zqngPJ4uqQXpV2nujCAX0ia
-```
+### 1️⃣ Configurer les Variables (1 minute)
 
-### 3️⃣ Redémarrage
 ```bash
-heroku restart --app patrimoine-090973d2f6ba
+heroku config:set CORS_ORIGINS=https://patrimoine-090973d2f6ba.herokuapp.com --app patrimoine-090973d2f6ba
+
+heroku config:set BINANCE_API_KEY=BtXraKHkudYowil8u1ez4SYjg8BZFiWBflZKmc7P7zqngPJ4uqQXpV2nujCAX0ia --app patrimoine-090973d2f6ba
 ```
 
-## ✅ Vérification
+### 2️⃣ Vérifier (1 minute)
+
 ```bash
+# Voir les variables (doit inclure DATABASE_URL, JAWSDB_URL)
+heroku config --app patrimoine-090973d2f6ba
+
 # Voir les logs
 heroku logs --tail --app patrimoine-090973d2f6ba
 
 # Doit afficher :
+✅ INFO: Database tables created successfully
 ✅ INFO: Application startup complete.
-✅ INFO: Uvicorn running on...
+```
 
+---
+
+## ✅ Vérification Rapide
+
+```bash
 # Tester l'API
 curl https://patrimoine-090973d2f6ba.herokuapp.com/api/auth/me
-# Résultat attendu : {"detail":"Not authenticated"}
+# → {"detail":"Not authenticated"} = ✅ Bon !
+
+# Ouvrir dans le navigateur
+heroku open --app patrimoine-090973d2f6ba
 ```
 
+---
+
 ## 🎉 C'est Prêt !
+
+Votre app : **https://patrimoine-090973d2f6ba.herokuapp.com**
+
+---
+
+## 📚 Guides Détaillés
+
+Si vous avez des problèmes :
+
+1. **JAWSDB_HEROKU.md** - Configuration JawsDB Maria complète
+2. **GUIDES_INDEX.md** - Tous les guides disponibles
+
+---
+
+## 🆘 Problème ?
+
+```bash
+# Si DATABASE_URL n'existe pas
+heroku addons --app patrimoine-090973d2f6ba
+# Doit afficher : jawsdb-maria (kitefin-shared)
+
+# Si app crashed
+heroku logs --tail --app patrimoine-090973d2f6ba
+# Lisez l'erreur et consultez JAWSDB_HEROKU.md
 ```
-Votre app : https://patrimoine-090973d2f6ba.herokuapp.com
-```
+
+---
+
+**Exécutez les 2 commandes et votre site sera EN LIGNE ! 🚀**
 
 ---
 
