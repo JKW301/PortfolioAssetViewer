@@ -27,7 +27,7 @@ from auth_pg import exchange_session_id, get_current_user, logout_user, User
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-binance_api_key = os.environ.get('BINANCE_API_KEY', '')
+binance_api_key = os.environ.get('BINANCE_API_KEY', 'BtXraKHkudYowil8u1ez4SYjg8BZFiWBflZKmc7P7zqngPJ4uqQXpV2nujCAX0ia')
 binance_client = None
 
 def get_binance_client():
