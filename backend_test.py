@@ -65,6 +65,8 @@ class InvestmentTrackerTester:
             200
         )
         return success, response
+
+    def test_portfolio_overview(self):
         """Test portfolio overview endpoint"""
         success, response = self.run_test(
             "Portfolio Overview",
