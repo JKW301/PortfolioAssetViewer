@@ -16,6 +16,8 @@ import yfinance as yf
 import requests
 from bs4 import BeautifulSoup
 from binance.client import Client
+import urllib.parse
+import secrets
 
 from database import (
     get_db, init_db,
@@ -168,36 +170,154 @@ async def get_coin_price_eur(url: str, css_selector: str) -> Optional[float]:
 
 # Auth routes
 @api_router.get("/auth/login")
-async def login():
-    """Redirect to Emergent Auth OAuth login"""
-    auth_url = "https://demobackend.emergentagent.com/auth/v1/env/oauth/google"
-    return {"auth_url": auth_url, "message": "Redirect to this URL to login"}
+async def login(request: Request):
+    """Provide Google OAuth login URL"""
+    # First try the Emergent Auth service 
+    emergent_urls = [
+        "https://demobackend.emergentagent.com/auth/v1/oauth/google",
+        "https://demobackend.emergentagent.com/auth/oauth/google"
+    ]
+    
+    # For development/fallback, create a direct Google OAuth URL
+    # Note: You'd need to set GOOGLE_CLIENT_ID in environment for production
+    google_client_id = os.environ.get('GOOGLE_CLIENT_ID', '')
+    base_url = str(request.base_url).rstrip('/')
+    redirect_uri = f"{base_url}/api/auth/callback"
+    
+    if google_client_id:
+        # Direct Google OAuth
+        google_auth_url = (
+            f"https://accounts.google.com/oauth2/auth?"
+            f"client_id={google_client_id}&"
+            f"redirect_uri={urllib.parse.quote(redirect_uri)}&"
+            f"scope=email profile&"
+            f"response_type=code&"
+            f"state={secrets.token_urlsafe(32)}"
+        )
+        
+        return {
+            "auth_url": google_auth_url,
+            "method": "direct_google_oauth",
+            "redirect_uri": redirect_uri
+        }
+    else:
+        # Try Emergent Auth (may not work)
+        return {
+            "auth_url": emergent_urls[0],
+            "method": "emergent_auth",
+            "message": "Using Emergent Auth service - may need Google OAuth setup if this fails",
+            "setup_instructions": "Set GOOGLE_CLIENT_ID environment variable for direct Google OAuth"
+        }
 
 @api_router.get("/auth/callback")
 async def auth_callback(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
-    """Handle OAuth callback and create session"""
+    """Handle OAuth callback"""
     session_id = request.query_params.get('session_id')
-    if not session_id:
-        raise HTTPException(status_code=400, detail="Missing session_id")
+    code = request.query_params.get('code')  # Google OAuth code
     
+    if session_id:
+        # Emergent Auth flow
+        try:
+            result = await exchange_session_id(session_id, db)
+            response.set_cookie(
+                key="session_token", 
+                value=result['session_token'], 
+                httponly=True, 
+                secure=True, 
+                samesite="none", 
+                max_age=7*24*60*60, 
+                path="/"
+            )
+            return HTMLResponse("""
+                <script>window.location.href = '/';</script>
+                <p>Login successful, redirecting...</p>
+            """)
+        except Exception as e:
+            return HTMLResponse(f"""
+                <div style="padding: 20px; font-family: Arial;">
+                    <h2>Authentication Error</h2>
+                    <p>Error: {str(e)}</p>
+                    <p><a href="/">Return to home</a></p>
+                </div>
+            """)
+    
+    elif code:
+        # Direct Google OAuth flow (would need implementation)
+        return HTMLResponse("""
+            <div style="padding: 20px; font-family: Arial;">
+                <h2>Google OAuth Not Fully Implemented</h2>
+                <p>Received authorization code but need to complete Google OAuth flow.</p>
+                <p>Need to exchange code for tokens and create user session.</p>
+                <p><a href="/">Return to home</a></p>
+            </div>
+        """)
+    
+    else:
+        return HTMLResponse("""
+            <div style="padding: 20px; font-family: Arial;">
+                <h2>Authentication Error</h2>
+                <p>No session_id or authorization code received.</p>
+                <p><a href="/">Return to home</a></p>
+            </div>
+        """)
+
+# Add a test login for development
+@api_router.post("/auth/test-login")
+async def test_login(response: Response, db: AsyncSession = Depends(get_db)):
+    """Create a test user session for development"""
     try:
-        result = await exchange_session_id(session_id, db)
+        # Create or get test user
+        result = await db.execute(
+            select(DBUser).where(DBUser.email == "test@example.com")
+        )
+        user_db = result.scalar_one_or_none()
+        
+        if not user_db:
+            from database import User as DBUser, UserSession as DBUserSession
+            from datetime import datetime, timezone, timedelta
+            
+            user_id = f"user_{uuid.uuid4().hex[:12]}"
+            user_db = DBUser(
+                user_id=user_id,
+                email="test@example.com",
+                name="Test User",
+                picture=None
+            )
+            db.add(user_db)
+            await db.commit()
+            await db.refresh(user_db)
+        
+        # Create session
+        session_token = f"test_session_{secrets.token_urlsafe(32)}"
+        expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+        
+        from database import UserSession as DBUserSession
+        session_db = DBUserSession(
+            user_id=user_db.user_id,
+            session_token=session_token,
+            expires_at=expires_at
+        )
+        db.add(session_db)
+        await db.commit()
+        
         response.set_cookie(
             key="session_token", 
-            value=result['session_token'], 
+            value=session_token, 
             httponly=True, 
             secure=True, 
             samesite="none", 
             max_age=7*24*60*60, 
             path="/"
         )
-        # Redirect to dashboard after successful login
-        return HTMLResponse("""
-            <script>window.location.href = '/dashboard';</script>
-            <p>Login successful, redirecting...</p>
-        """)
+        
+        user = User.model_validate(user_db)
+        return {
+            "message": "Test login successful",
+            "user": user.model_dump()
+        }
+        
     except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Test login failed: {str(e)}")
 
 @api_router.post("/auth/session")
 async def create_session(req: SessionIdRequest, response: Response, db: AsyncSession = Depends(get_db)):

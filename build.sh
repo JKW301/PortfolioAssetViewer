@@ -47,9 +47,12 @@ cat > frontend/build/index.html << 'EOF'
                 
                 <div class="space-y-4">
                     <a href="/login" onclick="handleLogin(event)" class="block bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg transition duration-200">
-                        🔐 Login
+                        🔐 Login with Google
                     </a>
-                    <a href="/api/docs" class="block bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-6 rounded-lg transition duration-200">
+                    <button onclick="testLogin()" class="block w-full bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-6 rounded-lg transition duration-200">
+                        🧪 Test Login (Development)
+                    </button>
+                    <a href="/api/docs" class="block bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-6 rounded-lg transition duration-200">
                         📚 API Documentation
                     </a>
                 </div>
@@ -75,6 +78,33 @@ cat > frontend/build/index.html << 'EOF'
             errorDiv.style.display = 'block';
             return false;
         };
+
+        // Test login function for development
+        async function testLogin() {
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = '🧪 Creating test session...';
+            
+            try {
+                const response = await fetch('/api/auth/test-login', { 
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    statusEl.innerHTML = '✅ Test login successful!';
+                    // Check auth again to update UI
+                    setTimeout(() => checkAuth(), 1000);
+                } else {
+                    const error = await response.text();
+                    statusEl.innerHTML = '❌ Test login failed';
+                    console.error('Test login failed:', error);
+                }
+            } catch (error) {
+                console.error('Test login error:', error);
+                statusEl.innerHTML = '❌ Test login error';
+            }
+        }
 
         // Simple login handler
         async function handleLogin(e) {
