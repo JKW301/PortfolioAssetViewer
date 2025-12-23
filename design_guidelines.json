@@ -1,0 +1,136 @@
+{
+  "design_system": {
+    "identity": {
+      "name": "E1 Financial",
+      "archetype": "Swiss High-Contrast / Matte Fintech",
+      "principles": [
+        "Fusion over Imitation: Mix Swiss Poster design with Bloomberg Terminal density.",
+        "Content is King: Data is the hero. Use Monospace fonts for all numbers.",
+        "Negative Space: Use generous padding inside containers, but tight gaps between them.",
+        "Contrast: High contrast text (White on Dark Grey) for readability. No low-contrast grey-on-grey."
+      ]
+    },
+    "typography": {
+      "font_family": {
+        "headings": "Chivo, sans-serif",
+        "body": "Manrope, sans-serif",
+        "mono": "JetBrains Mono, monospace"
+      },
+      "weights": {
+        "headings": "700",
+        "body": "400",
+        "bold": "600"
+      },
+      "sizes": {
+        "h1": "text-4xl md:text-5xl tracking-tight",
+        "h2": "text-3xl tracking-tight",
+        "h3": "text-xl font-semibold tracking-normal",
+        "body": "text-base leading-relaxed",
+        "small": "text-sm text-muted-foreground",
+        "mono_lg": "text-2xl md:text-3xl font-mono tracking-tight",
+        "mono_base": "text-base font-mono"
+      },
+      "installation": "Import from Google Fonts: https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;600&display=swap"
+    },
+    "colors": {
+      "theme": "dark",
+      "palette": {
+        "background": "#09090B",
+        "surface": "#18181B",
+        "surface_highlight": "#27272A",
+        "border": "#27272A",
+        "text_primary": "#FAFAFA",
+        "text_secondary": "#A1A1AA",
+        "primary": "#FAFAFA",
+        "accent_crypto": "#6366F1",
+        "accent_stocks": "#3B82F6",
+        "accent_coins": "#EAB308",
+        "success": "#22C55E",
+        "error": "#EF4444",
+        "warning": "#F59E0B"
+      },
+      "usage": {
+        "dashboard_bg": "bg-[#09090B]",
+        "card_bg": "bg-[#18181B]",
+        "border_color": "border-[#27272A]",
+        "text_main": "text-[#FAFAFA]",
+        "text_muted": "text-[#A1A1AA]"
+      }
+    },
+    "layout": {
+      "grid_system": "Bento Grid (Mode B: Control Room)",
+      "spacing": {
+        "container_padding": "p-6 md:p-8",
+        "gap": "gap-4 md:gap-6",
+        "section_spacing": "py-12"
+      },
+      "border_radius": "rounded-none md:rounded-sm",
+      "container_width": "max-w-7xl mx-auto"
+    },
+    "components": {
+      "buttons": {
+        "style": "sharp edges or minimal radius (rounded-sm)",
+        "primary": "bg-white text-black hover:bg-gray-200 transition-colors font-semibold px-6 py-2",
+        "secondary": "border border-zinc-700 text-white hover:bg-zinc-800 transition-colors px-6 py-2",
+        "destructive": "bg-red-900/20 text-red-500 border border-red-900/50 hover:bg-red-900/40"
+      },
+      "cards": {
+        "style": "Flat, 1px border, no shadow",
+        "classes": "bg-[#18181B] border border-[#27272A] p-6"
+      },
+      "inputs": {
+        "style": "Flat, dark background, light border on focus",
+        "classes": "bg-[#09090B] border border-[#27272A] focus:border-white focus:ring-0 text-white rounded-sm"
+      },
+      "modals": {
+        "style": "Clean, high contrast, centered",
+        "classes": "bg-[#18181B] border border-[#27272A] text-white sm:max-w-[425px]"
+      }
+    },
+    "visual_enhancers": {
+      "textures": "Subtle noise overlay (opacity 0.02) on background to reduce digital flatness.",
+      "gradients": "NONE. Strictly forbidden.",
+      "shadows": "None. Use borders for separation.",
+      "motion": "Micro-interactions only. Hover states on rows and buttons. No sweeping page transitions."
+    },
+    "assets": {
+      "icons": "Lucide React (Stroke width 1.5px)",
+      "images": [
+        {
+          "category": "coins",
+          "url": "https://images.unsplash.com/photo-1708714290523-e9f76878bf53?crop=entropy&cs=srgb&fm=jpg&q=85",
+          "description": "Gold coin close up for Coins section header or card"
+        },
+        {
+          "category": "crypto",
+          "url": "https://images.unsplash.com/photo-1673200644249-bd8f6852a10c?crop=entropy&cs=srgb&fm=jpg&q=85",
+          "description": "Bitcoin on white/clean surface for Crypto section"
+        },
+        {
+          "category": "stocks",
+          "url": "https://images.unsplash.com/photo-1762279389002-7b6abd7bd6c6?crop=entropy&cs=srgb&fm=jpg&q=85",
+          "description": "Abstract data lines for Stocks section or Hero background (low opacity)"
+        }
+      ]
+    }
+  },
+  "implementation_guide": {
+    "steps": [
+      "1. Setup Fonts: Add Google Fonts imports to index.css",
+      "2. Configure Tailwind: Update tailwind.config.js with the custom color palette (Zinc-based) and font families.",
+      "3. Global CSS: Apply the dark theme variables in index.css. Ensure body background is #09090B.",
+      "4. Layout Structure: Create the Main Dashboard Layout using the 'Control Room' grid strategy.",
+      "5. Components: Customize Shadcn components (Card, Button, Input, Dialog, Table) to match the 'Matte Fintech' style (remove rounded-xl, use rounded-sm or none).",
+      "6. Features: Implement the Portfolio Overview, Crypto List, Stocks List, and Coins List (with scraping fields).",
+      "7. Charts: Use Recharts for the 'History' section. Style them with the accent colors defined above."
+    ],
+    "universal_rules": [
+      "DO NOT use gradients.",
+      "DO NOT use 'Inter' for headings. Use 'Chivo'.",
+      "ALWAYS use 'JetBrains Mono' for currency and percentage values.",
+      "Ensure all interactive elements have data-testid attributes.",
+      "Use 'sonner' for toast notifications.",
+      "Keep the UI 'Sober' - avoid unnecessary decorations."
+    ]
+  }
+}
