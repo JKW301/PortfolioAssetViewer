@@ -30,13 +30,16 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 # Try multiple possible locations for frontend build
-FRONTEND_BUILD = None
 possible_paths = [
-    Path("/app/frontend/build"),
-    ROOT_DIR.parent / "frontend" / "build",
-    Path("../frontend/build"),
+    Path("/opt/render/project/src/frontend/build"),  # Render path
+    Path("/app/frontend/build"),  # Docker/Heroku path
+    ROOT_DIR.parent / "frontend" / "build",  # Relative to backend
+    Path("../frontend/build"),  # Relative path
+    Path("./frontend/build"),  # Current directory
+    Path("frontend/build"),  # Simple relative
 ]
 
+FRONTEND_BUILD = None
 for path in possible_paths:
     if path.exists() and (path / "index.html").exists():
         FRONTEND_BUILD = path
@@ -400,6 +403,13 @@ async def startup():
         logger.info(f"Frontend build found at: {FRONTEND_BUILD}")
     else:
         logger.warning("Frontend build not found - serving API only")
+        logger.warning(f"Working directory: {Path.cwd()}")
+        logger.warning(f"ROOT_DIR: {ROOT_DIR}")
+        logger.warning("Checked paths:")
+        for i, path in enumerate(possible_paths):
+            exists = path.exists()
+            has_index = (path / "index.html").exists() if exists else False
+            logger.warning(f"  {i+1}. {path} -> exists: {exists}, has_index: {has_index}")
     logger.info("Database tables created successfully")
 
 # Serve React app
@@ -472,19 +482,18 @@ async def root():
 <body>
     <div class="card">
         <h1>🚀 Portfolio Tracker</h1>
-        <div class="status">❌ Frontend non déployé</div>
-        <p>Le backend API fonctionne correctement, mais le frontend React n'est pas disponible sur Heroku.</p>
+        <div class="status">⚠️ Frontend Build Issue</div>
+        <p>Le backend API fonctionne correctement, mais le frontend build n'a pas été détecté.</p>
         
         <div class="solution">
-            <strong>Solution :</strong>
-            <p>Déployez le frontend séparément sur <strong>Netlify</strong> ou <strong>Vercel</strong> (gratuit) :</p>
+            <strong>Diagnostique :</strong>
+            <p>Frontend path: <code>{FRONTEND_BUILD or "Not found"}</code></p>
             <br>
-            <p>1. Connectez votre repo Git à Netlify</p>
-            <p>2. Build directory: <code>frontend/build</code></p>
-            <p>3. Variable d'environnement: <code>REACT_APP_BACKEND_URL=https://patrimoine-090973d2f6ba.herokuapp.com</code></p>
+            <p>Cela devrait être résolu automatiquement au prochain déploiement.</p>
+            <p>Si le problème persiste, contactez le support technique.</p>
         </div>
         
-        <p><strong>Ou utilisez directement l'API :</strong></p>
+        <p><strong>En attendant, utilisez l'API directement :</strong></p>
         <a href="/docs">📚 Documentation API</a>
     </div>
 </body>
