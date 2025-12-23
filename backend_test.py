@@ -4,8 +4,9 @@ import json
 from datetime import datetime
 
 class InvestmentTrackerTester:
-    def __init__(self, base_url="https://assettracker-27.preview.emergentagent.com"):
+    def __init__(self, base_url="https://assettracker-27.preview.emergentagent.com", session_token=None):
         self.base_url = base_url
+        self.session_token = session_token
         self.tests_run = 0
         self.tests_passed = 0
         self.created_assets = {
