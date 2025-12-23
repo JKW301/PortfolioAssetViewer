@@ -56,7 +56,15 @@ class InvestmentTrackerTester:
             print(f"❌ Failed - Error: {str(e)}")
             return False, {}
 
-    def test_portfolio_overview(self):
+    def test_auth_me(self):
+        """Test authentication endpoint"""
+        success, response = self.run_test(
+            "Auth Me",
+            "GET",
+            "auth/me",
+            200
+        )
+        return success, response
         """Test portfolio overview endpoint"""
         success, response = self.run_test(
             "Portfolio Overview",
