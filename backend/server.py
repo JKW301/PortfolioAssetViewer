@@ -243,10 +243,11 @@ async def get_crypto_current_price(crypto_id: str, request: Request):
 @api_router.post("/stocks", response_model=StockAsset)
 async def create_stock(asset: StockAssetCreate, request: Request):
     current_user = await get_current_user(request, db)
-        asset_obj = StockAsset(**asset.model_dump())
+    asset_data = asset.model_dump()
+    asset_data['user_id'] = current_user.user_id
+    asset_obj = StockAsset(**asset_data)
     doc = asset_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
-    doc[\'user_id\'] = current_user.user_id
     await db.stock_assets.insert_one(doc)
     return asset_obj
 
