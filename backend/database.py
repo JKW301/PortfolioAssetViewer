@@ -9,13 +9,13 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if not DATABASE_URL:
     print("ERROR: DATABASE_URL environment variable is not set!")
-    print("Please run: heroku addons:create heroku-postgresql:essential-0")
-    print("See START_HEROKU_NOW.md for detailed instructions")
+    print("Please provision JawsDB Maria add-on on Heroku")
+    print("See JAWSDB_HEROKU.md for detailed instructions")
     raise ValueError("DATABASE_URL must be set in environment variables")
 
-# Fix Heroku postgres:// to postgresql://
-if DATABASE_URL.startswith('postgres://'):
-    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+# Fix MySQL URL format for SQLAlchemy (mysql:// to mysql+aiomysql://)
+if DATABASE_URL.startswith('mysql://'):
+    DATABASE_URL = DATABASE_URL.replace('mysql://', 'mysql+aiomysql://', 1)
 
 # Create async engine
 engine = create_async_engine(DATABASE_URL, echo=False)
