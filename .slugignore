@@ -1,10 +1,10 @@
 tests/
 test_reports/
 .emergent/
-.git/
 design_guidelines.json
 backend_test.py
 test_result.md
 auth_testing.md
 *.md
 !README.md
+node_modules/
