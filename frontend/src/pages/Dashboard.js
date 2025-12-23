@@ -37,10 +37,10 @@ function Dashboard() {
     try {
       setLoading(true);
       const [overviewRes, cryptosRes, stocksRes, coinsRes] = await Promise.all([
-        axios.get(`${API}/portfolio/overview`),
-        axios.get(`${API}/crypto`),
-        axios.get(`${API}/stocks`),
-        axios.get(`${API}/coins`)
+        axios.get(`${API}/portfolio/overview`, { withCredentials: true }),
+        axios.get(`${API}/crypto`, { withCredentials: true }),
+        axios.get(`${API}/stocks`, { withCredentials: true }),
+        axios.get(`${API}/coins`, { withCredentials: true })
       ]);
 
       setOverview(overviewRes.data);
