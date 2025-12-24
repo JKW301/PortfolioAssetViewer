@@ -1,14 +1,19 @@
+from dotenv import load_dotenv
+from pathlib import Path
+import os
+
+# Load environment variables before importing other modules
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / '.env')
+
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-import os
 import logging
-from pathlib import Path
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 import uuid
 from datetime import datetime
@@ -24,12 +29,15 @@ from database import (
     CryptoAsset as DBCryptoAsset,
     StockAsset as DBStockAsset,
     CoinAsset as DBCoinAsset,
-    HistorySnapshot as DBHistorySnapshot
+    HistorySnapshot as DBHistorySnapshot,
+    User as DBUser,
+    UserSession as DBUserSession
 )
-from auth_pg import exchange_session_id, get_current_user, logout_user, User
-
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+from auth_pg import exchange_session_id, logout_user as logout_user_pg
+from auth_email import (
+    create_user, authenticate_user, get_current_user, logout_user,
+    UserSignup, UserLogin, User
+)
 
 # Try multiple possible locations for frontend build
 possible_paths = [
@@ -73,14 +81,13 @@ class CryptoAssetCreate(BaseModel):
     purchase_price: float
 
 class CryptoAssetResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: str
     name: str
     symbol: str
     quantity: float
     purchase_price: float
     created_at: datetime
-    class Config:
-        from_attributes = True
 
 class StockAssetCreate(BaseModel):
     name: str
@@ -89,14 +96,13 @@ class StockAssetCreate(BaseModel):
     purchase_price: float
 
 class StockAssetResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: str
     name: str
     symbol: str
     quantity: float
     purchase_price: float
     created_at: datetime
-    class Config:
-        from_attributes = True
 
 class CoinAssetCreate(BaseModel):
     name: str
@@ -105,24 +111,22 @@ class CoinAssetCreate(BaseModel):
     quantity: float
 
 class CoinAssetResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: str
     name: str
     url: str
     css_selector: str
     quantity: float
     created_at: datetime
-    class Config:
-        from_attributes = True
 
 class HistorySnapshotResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: str
     timestamp: datetime
     total_value_eur: float
     crypto_value_eur: float
     stocks_value_eur: float
     coins_value_eur: float
-    class Config:
-        from_attributes = True
 
 # Helper functions
 def get_eur_usd_rate():
@@ -169,9 +173,52 @@ async def get_coin_price_eur(url: str, css_selector: str) -> Optional[float]:
         return None
 
 # Auth routes
+@api_router.post("/auth/signup")
+async def signup(signup_data: UserSignup, response: Response, db: AsyncSession = Depends(get_db)):
+    """Create a new user account"""
+    try:
+        user = await create_user(signup_data, db)
+        # Automatically log in the new user
+        login_data = UserLogin(email=signup_data.email, password=signup_data.password)
+        result = await authenticate_user(login_data, db)
+        
+        response.set_cookie(
+            key="session_token", 
+            value=result['session_token'], 
+            httponly=True, 
+            secure=True, 
+            samesite="none", 
+            max_age=7*24*60*60, 
+            path="/"
+        )
+        
+        return {"user": result["user"], "message": "Account created successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.post("/auth/login")
+async def login(login_data: UserLogin, response: Response, db: AsyncSession = Depends(get_db)):
+    """Login with email and password"""
+    try:
+        result = await authenticate_user(login_data, db)
+        
+        response.set_cookie(
+            key="session_token", 
+            value=result['session_token'], 
+            httponly=True, 
+            secure=True, 
+            samesite="none", 
+            max_age=7*24*60*60, 
+            path="/"
+        )
+        
+        return {"user": result["user"], "message": "Login successful"}
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
 @api_router.get("/auth/login")
-async def login(request: Request):
-    """Provide Google OAuth login URL"""
+async def login_old(request: Request):
+    """Provide Google OAuth login URL (legacy endpoint)"""
     # First try the Emergent Auth service 
     emergent_urls = [
         "https://demobackend.emergentagent.com/auth/v1/oauth/google",
@@ -208,6 +255,21 @@ async def login(request: Request):
             "message": "Using Emergent Auth service - may need Google OAuth setup if this fails",
             "setup_instructions": "Set GOOGLE_CLIENT_ID environment variable for direct Google OAuth"
         }
+
+@api_router.post("/auth/logout")
+async def logout_route(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
+    """Logout current user"""
+    session_token = request.cookies.get('session_token')
+    if session_token:
+        await logout_user(session_token, db)
+        response.delete_cookie("session_token", path="/")
+    return {"message": "Logged out successfully"}
+
+@api_router.get("/auth/me")
+async def get_me(request: Request, db: AsyncSession = Depends(get_db)):
+    """Get current user information"""
+    current_user = await get_current_user(request, db)
+    return current_user.model_dump()
 
 @api_router.get("/auth/callback")
 async def auth_callback(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
@@ -273,7 +335,6 @@ async def test_login(response: Response, db: AsyncSession = Depends(get_db)):
         user_db = result.scalar_one_or_none()
         
         if not user_db:
-            from database import User as DBUser, UserSession as DBUserSession
             from datetime import datetime, timezone, timedelta
             
             user_id = f"user_{uuid.uuid4().hex[:12]}"
@@ -291,7 +352,6 @@ async def test_login(response: Response, db: AsyncSession = Depends(get_db)):
         session_token = f"test_session_{secrets.token_urlsafe(32)}"
         expires_at = datetime.now(timezone.utc) + timedelta(days=7)
         
-        from database import UserSession as DBUserSession
         session_db = DBUserSession(
             user_id=user_db.user_id,
             session_token=session_token,
@@ -324,18 +384,6 @@ async def create_session(req: SessionIdRequest, response: Response, db: AsyncSes
     result = await exchange_session_id(req.session_id, db)
     response.set_cookie(key="session_token", value=result['session_token'], httponly=True, secure=True, samesite="none", max_age=7*24*60*60, path="/")
     return result
-
-@api_router.get("/auth/me", response_model=User)
-async def get_me(request: Request, db: AsyncSession = Depends(get_db)):
-    return await get_current_user(request, db)
-
-@api_router.post("/auth/logout")
-async def logout(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
-    session_token = request.cookies.get('session_token')
-    if session_token:
-        await logout_user(session_token, db)
-    response.delete_cookie("session_token", path="/")
-    return {"message": "Logged out successfully"}
 
 # Crypto endpoints
 @api_router.post("/crypto", response_model=CryptoAssetResponse)
@@ -565,7 +613,17 @@ async def startup():
     logger.info("Database tables created successfully")
 
 # Serve React app
+@api_router.get("/test-auth")
+async def test_auth_page():
+    """Serve the test authentication page"""
+    test_page = ROOT_DIR / "test_auth.html"
+    if test_page.exists():
+        return FileResponse(test_page)
+    else:
+        return HTMLResponse("<h1>Test auth page not found</h1>", status_code=404)
+
 @app.get("/")
+async def root():
 async def root():
     if FRONTEND_BUILD:
         index_path = FRONTEND_BUILD / "index.html"

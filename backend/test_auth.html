@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .btn-primary {
+            background-color: white;
+            color: black;
+        }
+        .btn-primary:hover {
+            background-color: #f3f4f6;
+        }
+        .form-input {
+            background-color: #27272a;
+            border: 1px solid #3f3f46;
+            color: #fafafa;
+        }
+        .form-input:focus {
+            border-color: white;
+            outline: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-900">
+    <div id="app">
+        <!-- Login/Signup Page -->
+        <div id="auth-page" class="min-h-screen bg-gray-900 flex items-center justify-center p-6">
+            <div class="bg-gray-800 border border-gray-700 p-8 md:p-12 max-w-md w-full rounded-lg">
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl md:text-4xl font-bold text-white mb-3">
+                        Portfolio Tracker
+                    </h1>
+                    <p class="text-gray-400" id="auth-subtitle">Connectez-vous pour accéder à votre portfolio</p>
+                </div>
+
+                <div id="error-message" class="mb-6 border border-red-500 bg-red-500 bg-opacity-10 p-4 rounded text-red-400 hidden"></div>
+                <div id="success-message" class="mb-6 border border-green-500 bg-green-500 bg-opacity-10 p-4 rounded text-green-400 hidden"></div>
+
+                <!-- Login Form -->
+                <form id="login-form" class="space-y-4">
+                    <div>
+                        <label for="login-email" class="block text-white mb-2">Email</label>
+                        <input id="login-email" type="email" required class="form-input w-full p-3 rounded" placeholder="votre@email.com">
+                    </div>
+                    <div>
+                        <label for="login-password" class="block text-white mb-2">Mot de passe</label>
+                        <input id="login-password" type="password" required class="form-input w-full p-3 rounded" placeholder="Votre mot de passe">
+                    </div>
+                    <button type="submit" class="btn-primary w-full font-semibold py-3 text-lg rounded">
+                        Se connecter
+                    </button>
+                </form>
+
+                <!-- Signup Form -->
+                <form id="signup-form" class="space-y-4 hidden">
+                    <div>
+                        <label for="signup-name" class="block text-white mb-2">Nom complet</label>
+                        <input id="signup-name" type="text" required class="form-input w-full p-3 rounded" placeholder="Votre nom complet">
+                    </div>
+                    <div>
+                        <label for="signup-email" class="block text-white mb-2">Email</label>
+                        <input id="signup-email" type="email" required class="form-input w-full p-3 rounded" placeholder="votre@email.com">
+                    </div>
+                    <div>
+                        <label for="signup-password" class="block text-white mb-2">Mot de passe</label>
+                        <input id="signup-password" type="password" required class="form-input w-full p-3 rounded" placeholder="Minimum 6 caractères">
+                    </div>
+                    <div>
+                        <label for="signup-confirm-password" class="block text-white mb-2">Confirmer le mot de passe</label>
+                        <input id="signup-confirm-password" type="password" required class="form-input w-full p-3 rounded" placeholder="Confirmer votre mot de passe">
+                    </div>
+                    <button type="submit" class="btn-primary w-full font-semibold py-3 text-lg rounded">
+                        Créer mon compte
+                    </button>
+                </form>
+
+                <div class="mt-6 text-center">
+                    <p class="text-gray-400 text-sm">
+                        <span id="auth-toggle-text">Pas encore de compte ?</span>
+                        <button id="auth-toggle" class="text-white hover:underline">
+                            Créer un compte
+                        </button>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Page -->
+        <div id="dashboard-page" class="min-h-screen bg-gray-900 p-6 hidden">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex justify-between items-center mb-8">
+                    <h1 class="text-3xl font-bold text-white">Dashboard</h1>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-gray-400">Bonjour, <span id="user-name"></span></span>
+                        <button id="logout-btn" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                            Déconnexion
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-800 border border-gray-700 p-6 rounded-lg">
+                    <h2 class="text-xl font-semibold text-white mb-4">Bienvenue !</h2>
+                    <p class="text-gray-400">Votre système d'authentification email/mot de passe fonctionne parfaitement !</p>
+                    <p class="text-gray-400 mt-2">Vous êtes maintenant connecté et authentifié.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+        let currentUser = null;
+        let isLoginMode = true;
+
+        // Elements
+        const authPage = document.getElementById('auth-page');
+        const dashboardPage = document.getElementById('dashboard-page');
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        const authToggle = document.getElementById('auth-toggle');
+        const authToggleText = document.getElementById('auth-toggle-text');
+        const authSubtitle = document.getElementById('auth-subtitle');
+        const errorMessage = document.getElementById('error-message');
+        const successMessage = document.getElementById('success-message');
+        const userNameSpan = document.getElementById('user-name');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        // Utility functions
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.remove('hidden');
+            successMessage.classList.add('hidden');
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.classList.remove('hidden');
+            errorMessage.classList.add('hidden');
+        }
+
+        function hideMessages() {
+            errorMessage.classList.add('hidden');
+            successMessage.classList.add('hidden');
+        }
+
+        function showDashboard(user) {
+            currentUser = user;
+            userNameSpan.textContent = user.name;
+            authPage.classList.add('hidden');
+            dashboardPage.classList.remove('hidden');
+        }
+
+        function showAuth() {
+            authPage.classList.remove('hidden');
+            dashboardPage.classList.add('hidden');
+            hideMessages();
+        }
+
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            if (isLoginMode) {
+                loginForm.classList.remove('hidden');
+                signupForm.classList.add('hidden');
+                authToggleText.textContent = 'Pas encore de compte ?';
+                authToggle.textContent = 'Créer un compte';
+                authSubtitle.textContent = 'Connectez-vous pour accéder à votre portfolio';
+            } else {
+                loginForm.classList.add('hidden');
+                signupForm.classList.remove('hidden');
+                authToggleText.textContent = 'Déjà un compte ?';
+                authToggle.textContent = 'Se connecter';
+                authSubtitle.textContent = 'Rejoignez Portfolio Tracker';
+            }
+            hideMessages();
+        }
+
+        // API calls
+        async function login(email, password) {
+            const response = await fetch(`${API_BASE}/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.detail || 'Erreur de connexion');
+            }
+            return data;
+        }
+
+        async function signup(name, email, password) {
+            const response = await fetch(`${API_BASE}/auth/signup`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({ name, email, password }),
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.detail || 'Erreur lors de la création du compte');
+            }
+            return data;
+        }
+
+        async function getCurrentUser() {
+            const response = await fetch(`${API_BASE}/auth/me`, {
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                return null;
+            }
+            return await response.json();
+        }
+
+        async function logout() {
+            await fetch(`${API_BASE}/auth/logout`, {
+                method: 'POST',
+                credentials: 'include',
+            });
+        }
+
+        // Event listeners
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                const data = await login(email, password);
+                showSuccess('Connexion réussie !');
+                setTimeout(() => showDashboard(data.user), 500);
+            } catch (error) {
+                showError(error.message);
+            }
+        });
+
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-confirm-password').value;
+
+            if (password !== confirmPassword) {
+                showError('Les mots de passe ne correspondent pas');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('Le mot de passe doit contenir au moins 6 caractères');
+                return;
+            }
+
+            try {
+                const data = await signup(name, email, password);
+                showSuccess('Compte créé avec succès !');
+                setTimeout(() => showDashboard(data.user), 500);
+            } catch (error) {
+                showError(error.message);
+            }
+        });
+
+        authToggle.addEventListener('click', toggleAuthMode);
+
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await logout();
+                showAuth();
+            } catch (error) {
+                console.error('Logout error:', error);
+                showAuth(); // Show auth page anyway
+            }
+        });
+
+        // Check if user is already logged in
+        getCurrentUser().then(user => {
+            if (user) {
+                showDashboard(user);
+            }
+        });
+    </script>
+</body>
+</html>

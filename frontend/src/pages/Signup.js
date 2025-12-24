@@ -1,40 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { LogIn, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 import { API } from '../App';
 
-function Login() {
+function Signup() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-
-  useEffect(() => {
-    // Check if already authenticated
-    const checkAuth = async () => {
-      try {
-        const response = await axios.get(`${API}/auth/me`, {
-          withCredentials: true
-        });
-        if (response.data) {
-          navigate('/dashboard');
-        }
-      } catch (error) {
-        // Not authenticated, show login
-      }
-    };
-    checkAuth();
-  }, [navigate]);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -46,17 +32,32 @@ function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (formData.password !== formData.confirmPassword) {
+      setError('Les mots de passe ne correspondent pas');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
-      await axios.post(`${API}/auth/login`, formData, {
+      await axios.post(`${API}/auth/signup`, {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password
+      }, {
         withCredentials: true
       });
 
       navigate('/dashboard');
     } catch (error) {
-      setError(error.response?.data?.detail || 'Email ou mot de passe incorrect');
+      setError(error.response?.data?.detail || 'Une erreur est survenue lors de la création du compte');
     } finally {
       setLoading(false);
     }
@@ -64,12 +65,12 @@ function Login() {
 
   return (
     <div className="min-h-screen bg-[#09090B] flex items-center justify-center p-6">
-      <Card className="bg-[#18181B] border border-[#27272A] p-8 md:p-12 max-w-md w-full" data-testid="login-card">
+      <Card className="bg-[#18181B] border border-[#27272A] p-8 md:p-12 max-w-md w-full">
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold font-['Chivo'] text-[#FAFAFA] mb-3">
-            Portfolio Tracker
+            Créer un compte
           </h1>
-          <p className="text-[#A1A1AA]">Connectez-vous pour accéder à votre portfolio</p>
+          <p className="text-[#A1A1AA]">Rejoignez Portfolio Tracker</p>
         </div>
 
         {error && (
@@ -81,6 +82,20 @@ function Login() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="name" className="text-[#FAFAFA]">Nom complet</Label>
+            <Input
+              id="name"
+              name="name"
+              type="text"
+              required
+              value={formData.name}
+              onChange={handleChange}
+              className="bg-[#27272A] border-[#3F3F46] text-[#FAFAFA] focus:border-white"
+              placeholder="Votre nom complet"
+            />
+          </div>
+
           <div>
             <Label htmlFor="email" className="text-[#FAFAFA]">Email</Label>
             <Input
@@ -106,7 +121,7 @@ function Login() {
                 value={formData.password}
                 onChange={handleChange}
                 className="bg-[#27272A] border-[#3F3F46] text-[#FAFAFA] focus:border-white pr-10"
-                placeholder="Votre mot de passe"
+                placeholder="Minimum 6 caractères"
               />
               <button
                 type="button"
@@ -118,34 +133,54 @@ function Login() {
             </div>
           </div>
 
+          <div>
+            <Label htmlFor="confirmPassword" className="text-[#FAFAFA]">Confirmer le mot de passe</Label>
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                required
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className="bg-[#27272A] border-[#3F3F46] text-[#FAFAFA] focus:border-white pr-10"
+                placeholder="Confirmer votre mot de passe"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#A1A1AA] hover:text-[#FAFAFA]"
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
           <Button 
             type="submit"
             disabled={loading}
             className="w-full bg-white text-black hover:bg-gray-200 font-semibold py-6 text-lg"
-            data-testid="login-button"
           >
-            <LogIn className="w-5 h-5 mr-2" />
-            {loading ? 'Connexion...' : 'Se connecter'}
+            <UserPlus className="w-5 h-5 mr-2" />
+            {loading ? 'Création...' : 'Créer mon compte'}
           </Button>
         </form>
 
         <div className="mt-6 text-center">
           <p className="text-[#A1A1AA] text-sm">
-            Pas encore de compte ?{' '}
-            <Link to="/signup" className="text-white hover:underline">
-              Créer un compte
+            Déjà un compte ?{' '}
+            <Link to="/login" className="text-white hover:underline">
+              Se connecter
             </Link>
           </p>
         </div>
 
         <div className="mt-6 text-center text-sm text-[#A1A1AA]">
-          <p>En vous connectant, vous acceptez nos conditions d'utilisation</p>
+          <p>En créant un compte, vous acceptez nos conditions d'utilisation</p>
         </div>
       </Card>
     </div>
   );
 }
 
-export default Login;
-
-export default Login;
+export default Signup;
