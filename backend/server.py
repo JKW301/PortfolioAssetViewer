@@ -624,7 +624,6 @@ async def test_auth_page():
 
 @app.get("/")
 async def root():
-async def root():
     if FRONTEND_BUILD:
         index_path = FRONTEND_BUILD / "index.html"
         if index_path.exists():
