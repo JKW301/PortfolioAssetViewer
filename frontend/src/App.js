@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import '@/App.css';
+import './App.css';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import Dashboard from './pages/Dashboard';

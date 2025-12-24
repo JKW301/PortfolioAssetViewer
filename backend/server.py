@@ -624,17 +624,12 @@ async def test_auth_page():
 
 @app.get("/")
 async def root():
-    if FRONTEND_BUILD:
-        index_path = FRONTEND_BUILD / "index.html"
-        if index_path.exists():
-            return FileResponse(index_path)
-    
     # Serve our authentication test page as the main page
     test_page = ROOT_DIR / "test_auth.html"
     if test_page.exists():
         return FileResponse(test_page)
     
-    # Ultimate fallback - redirect to test auth page
+    # Ultimate fallback with email/password authentication
     return HTMLResponse(content="""
 <!DOCTYPE html>
 <html lang="fr">
@@ -642,12 +637,227 @@ async def root():
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portfolio Tracker</title>
-    <script>
-        // Redirect to auth test page
-        window.location.href = '/api/test-auth';
-    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .auth-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .toggle-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        .success {
+            color: green;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
+    <div class="auth-container">
+        <h2>Portfolio Tracker</h2>
+        <p>Connectez-vous avec votre email et mot de passe</p>
+        
+        <div id="loginForm">
+            <h3>Connexion</h3>
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" id="loginEmail" required>
+            </div>
+            <div class="form-group">
+                <label>Mot de passe:</label>
+                <input type="password" id="loginPassword" required>
+            </div>
+            <button onclick="login()">Se connecter</button>
+            <a href="#" class="toggle-link" onclick="toggleForm()">Créer un compte</a>
+        </div>
+        
+        <div id="signupForm" style="display: none;">
+            <h3>Inscription</h3>
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" id="signupEmail" required>
+            </div>
+            <div class="form-group">
+                <label>Mot de passe:</label>
+                <input type="password" id="signupPassword" required>
+            </div>
+            <div class="form-group">
+                <label>Confirmer le mot de passe:</label>
+                <input type="password" id="signupPasswordConfirm" required>
+            </div>
+            <button onclick="signup()">Créer le compte</button>
+            <a href="#" class="toggle-link" onclick="toggleForm()">Déjà un compte ?</a>
+        </div>
+        
+        <div id="message"></div>
+    </div>
+    
+    <script>
+        function toggleForm() {
+            const loginForm = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
+            
+            if (loginForm.style.display === 'none') {
+                loginForm.style.display = 'block';
+                signupForm.style.display = 'none';
+            } else {
+                loginForm.style.display = 'none';
+                signupForm.style.display = 'block';
+            }
+            document.getElementById('message').innerHTML = '';
+        }
+        
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                showMessage('Veuillez remplir tous les champs', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password }),
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    showMessage('Connexion réussie !', 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    const error = await response.json();
+                    showMessage(error.detail || 'Erreur de connexion', 'error');
+                }
+            } catch (error) {
+                showMessage('Erreur de connexion', 'error');
+            }
+        }
+        
+        async function signup() {
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const passwordConfirm = document.getElementById('signupPasswordConfirm').value;
+            
+            if (!email || !password || !passwordConfirm) {
+                showMessage('Veuillez remplir tous les champs', 'error');
+                return;
+            }
+            
+            if (password !== passwordConfirm) {
+                showMessage('Les mots de passe ne correspondent pas', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/auth/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password }),
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    showMessage('Compte créé avec succès !', 'success');
+                    setTimeout(() => {
+                        toggleForm();
+                    }, 1000);
+                } else {
+                    const error = await response.json();
+                    showMessage(error.detail || 'Erreur lors de la création du compte', 'error');
+                }
+            } catch (error) {
+                showMessage('Erreur lors de la création du compte', 'error');
+            }
+        }
+        
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+        
+        // Vérifier si l'utilisateur est déjà connecté
+        fetch('/auth/me', { credentials: 'include' })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Not authenticated');
+            })
+            .then(user => {
+                document.body.innerHTML = `
+                    <div class="auth-container">
+                        <h2>Bienvenue ${user.email} !</h2>
+                        <p>Vous êtes connecté au Portfolio Tracker</p>
+                        <button onclick="logout()">Se déconnecter</button>
+                    </div>
+                `;
+            })
+            .catch(() => {
+                // Utilisateur non connecté, afficher les formulaires
+            });
+            
+        async function logout() {
+            await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>
+    """, status_code=200)
     <div style="padding: 20px; text-align: center; font-family: Arial;">
         <h1>Portfolio Tracker</h1>
         <p>Redirection vers la page de connexion...</p>
