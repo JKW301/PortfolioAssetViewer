@@ -858,14 +858,6 @@ async def root():
 </body>
 </html>
     """, status_code=200)
-    <div style="padding: 20px; text-align: center; font-family: Arial;">
-        <h1>Portfolio Tracker</h1>
-        <p>Redirection vers la page de connexion...</p>
-        <p><a href="/api/test-auth">Cliquez ici si vous n'êtes pas redirigé automatiquement</a></p>
-    </div>
-</body>
-</html>
-    """, status_code=200)
 
 @app.get("/{full_path:path}")
 async def catch_all(full_path: str):
