@@ -838,13 +838,8 @@ async def root():
                 throw new Error('Not authenticated');
             })
             .then(user => {
-                document.body.innerHTML = `
-                    <div class="auth-container">
-                        <h2>Bienvenue ${user.email} !</h2>
-                        <p>Vous êtes connecté au Portfolio Tracker</p>
-                        <button onclick="logout()">Se déconnecter</button>
-                    </div>
-                `;
+                // Rediriger vers le dashboard complet
+                window.location.href = '/dashboard';
             })
             .catch(() => {
                 // Utilisateur non connecté, afficher les formulaires
@@ -854,6 +849,472 @@ async def root():
             await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
             window.location.reload();
         }
+    </script>
+</body>
+</html>
+    """, status_code=200)
+
+@app.get("/dashboard")
+async def dashboard_page(request: Request):
+    """Serve the full dashboard with all portfolio features"""
+    return HTMLResponse(content="""
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Tracker - Dashboard</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 20px; background: #1e293b; border-radius: 12px; }
+        .header h1 { color: #38bdf8; }
+        .user-info { display: flex; align-items: center; gap: 15px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-success { background: #22c55e; color: white; }
+        .btn-success:hover { background: #16a34a; }
+        .overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; }
+        .card h3 { color: #94a3b8; font-size: 14px; margin-bottom: 10px; }
+        .card .value { font-size: 28px; font-weight: bold; color: #38bdf8; }
+        .card .change { font-size: 14px; margin-top: 5px; }
+        .positive { color: #22c55e; }
+        .negative { color: #ef4444; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab { padding: 12px 24px; background: #1e293b; border: none; color: #94a3b8; cursor: pointer; border-radius: 8px; font-weight: 500; }
+        .tab.active { background: #3b82f6; color: white; }
+        .section { background: #1e293b; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .section h2 { color: #f1f5f9; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
+        th { color: #94a3b8; font-weight: 500; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; color: #94a3b8; }
+        .form-group input { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: white; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
+        .modal.active { display: flex; }
+        .modal-content { background: #1e293b; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .close-btn { background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; }
+        .loading { text-align: center; padding: 40px; color: #94a3b8; }
+        .empty { text-align: center; padding: 40px; color: #64748b; }
+        .delete-btn { background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px; }
+        .delete-btn:hover { color: #dc2626; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Portfolio Tracker</h1>
+            <div class="user-info">
+                <span id="userEmail">Chargement...</span>
+                <button class="btn btn-danger" onclick="logout()">Déconnexion</button>
+            </div>
+        </div>
+        
+        <div class="overview" id="overview">
+            <div class="card">
+                <h3>💰 Valeur Totale</h3>
+                <div class="value" id="totalValue">-</div>
+            </div>
+            <div class="card">
+                <h3>📈 Cryptos</h3>
+                <div class="value" id="cryptoValue">-</div>
+            </div>
+            <div class="card">
+                <h3>📊 Actions</h3>
+                <div class="value" id="stockValue">-</div>
+            </div>
+            <div class="card">
+                <h3>🪙 Pièces</h3>
+                <div class="value" id="coinValue">-</div>
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('crypto')">🔶 Cryptomonnaies</button>
+            <button class="tab" onclick="showTab('stocks')">📈 Actions</button>
+            <button class="tab" onclick="showTab('coins')">🪙 Pièces</button>
+        </div>
+        
+        <!-- Crypto Section -->
+        <div id="crypto-section" class="section">
+            <div class="section-header">
+                <h2>Cryptomonnaies</h2>
+                <button class="btn btn-primary" onclick="openModal('crypto')">+ Ajouter</button>
+            </div>
+            <div id="crypto-list"><div class="loading">Chargement...</div></div>
+        </div>
+        
+        <!-- Stocks Section -->
+        <div id="stocks-section" class="section" style="display:none;">
+            <div class="section-header">
+                <h2>Actions</h2>
+                <button class="btn btn-primary" onclick="openModal('stock')">+ Ajouter</button>
+            </div>
+            <div id="stocks-list"><div class="loading">Chargement...</div></div>
+        </div>
+        
+        <!-- Coins Section -->
+        <div id="coins-section" class="section" style="display:none;">
+            <div class="section-header">
+                <h2>Pièces de Collection</h2>
+                <button class="btn btn-primary" onclick="openModal('coin')">+ Ajouter</button>
+            </div>
+            <div id="coins-list"><div class="loading">Chargement...</div></div>
+        </div>
+    </div>
+    
+    <!-- Add Crypto Modal -->
+    <div class="modal" id="crypto-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Ajouter une Crypto</h3>
+                <button class="close-btn" onclick="closeModal('crypto')">&times;</button>
+            </div>
+            <form onsubmit="addCrypto(event)">
+                <div class="form-group">
+                    <label>Nom</label>
+                    <input type="text" id="crypto-name" placeholder="ex: Bitcoin" required>
+                </div>
+                <div class="form-group">
+                    <label>Symbole</label>
+                    <input type="text" id="crypto-symbol" placeholder="ex: BTC" required>
+                </div>
+                <div class="form-group">
+                    <label>Quantité</label>
+                    <input type="number" step="any" id="crypto-quantity" placeholder="ex: 0.5" required>
+                </div>
+                <div class="form-group">
+                    <label>Prix d'achat (USD)</label>
+                    <input type="number" step="any" id="crypto-price" placeholder="ex: 45000" required>
+                </div>
+                <button type="submit" class="btn btn-success" style="width:100%">Ajouter</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Add Stock Modal -->
+    <div class="modal" id="stock-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Ajouter une Action</h3>
+                <button class="close-btn" onclick="closeModal('stock')">&times;</button>
+            </div>
+            <form onsubmit="addStock(event)">
+                <div class="form-group">
+                    <label>Nom</label>
+                    <input type="text" id="stock-name" placeholder="ex: Apple" required>
+                </div>
+                <div class="form-group">
+                    <label>Symbole</label>
+                    <input type="text" id="stock-symbol" placeholder="ex: AAPL" required>
+                </div>
+                <div class="form-group">
+                    <label>Quantité</label>
+                    <input type="number" step="any" id="stock-quantity" placeholder="ex: 10" required>
+                </div>
+                <div class="form-group">
+                    <label>Prix d'achat (USD)</label>
+                    <input type="number" step="any" id="stock-price" placeholder="ex: 150" required>
+                </div>
+                <button type="submit" class="btn btn-success" style="width:100%">Ajouter</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Add Coin Modal -->
+    <div class="modal" id="coin-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Ajouter une Pièce</h3>
+                <button class="close-btn" onclick="closeModal('coin')">&times;</button>
+            </div>
+            <form onsubmit="addCoin(event)">
+                <div class="form-group">
+                    <label>Nom</label>
+                    <input type="text" id="coin-name" placeholder="ex: 20 Francs Napoléon" required>
+                </div>
+                <div class="form-group">
+                    <label>URL du prix</label>
+                    <input type="url" id="coin-url" placeholder="https://..." required>
+                </div>
+                <div class="form-group">
+                    <label>Sélecteur CSS</label>
+                    <input type="text" id="coin-selector" placeholder="ex: .price-value" required>
+                </div>
+                <div class="form-group">
+                    <label>Quantité</label>
+                    <input type="number" step="any" id="coin-quantity" placeholder="ex: 5" required>
+                </div>
+                <button type="submit" class="btn btn-success" style="width:100%">Ajouter</button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        const API = '/api';
+        let currentUser = null;
+        
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const res = await fetch('/auth/me', { credentials: 'include' });
+                if (!res.ok) throw new Error('Not authenticated');
+                currentUser = await res.json();
+                document.getElementById('userEmail').textContent = currentUser.email;
+                loadAllData();
+            } catch (e) {
+                window.location.href = '/';
+            }
+        }
+        
+        async function logout() {
+            await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
+            window.location.href = '/';
+        }
+        
+        // Tab switching
+        function showTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+            event.target.classList.add('active');
+            document.getElementById(tab + '-section').style.display = 'block';
+        }
+        
+        // Modal handling
+        function openModal(type) {
+            document.getElementById(type + '-modal').classList.add('active');
+        }
+        function closeModal(type) {
+            document.getElementById(type + '-modal').classList.remove('active');
+        }
+        
+        // Load all data
+        async function loadAllData() {
+            await Promise.all([loadCryptos(), loadStocks(), loadCoins(), loadOverview()]);
+        }
+        
+        async function loadOverview() {
+            try {
+                const res = await fetch(API + '/portfolio/overview', { credentials: 'include' });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('totalValue').textContent = '$' + (data.total_value || 0).toFixed(2);
+                    document.getElementById('cryptoValue').textContent = '$' + (data.crypto_value || 0).toFixed(2);
+                    document.getElementById('stockValue').textContent = '$' + (data.stock_value || 0).toFixed(2);
+                    document.getElementById('coinValue').textContent = '$' + (data.coin_value || 0).toFixed(2);
+                }
+            } catch (e) {
+                console.error('Error loading overview:', e);
+            }
+        }
+        
+        async function loadCryptos() {
+            try {
+                const res = await fetch(API + '/crypto', { credentials: 'include' });
+                const cryptos = await res.json();
+                const container = document.getElementById('crypto-list');
+                
+                if (cryptos.length === 0) {
+                    container.innerHTML = '<div class="empty">Aucune crypto ajoutée</div>';
+                    return;
+                }
+                
+                let html = '<table><thead><tr><th>Nom</th><th>Symbole</th><th>Quantité</th><th>Prix d\\'achat</th><th>Prix actuel</th><th>Valeur</th><th></th></tr></thead><tbody>';
+                for (const c of cryptos) {
+                    let currentPrice = '-';
+                    let value = '-';
+                    try {
+                        const priceRes = await fetch(API + '/crypto/' + c.id + '/price', { credentials: 'include' });
+                        if (priceRes.ok) {
+                            const priceData = await priceRes.json();
+                            currentPrice = '$' + priceData.current_price.toFixed(2);
+                            value = '$' + (priceData.current_price * c.quantity).toFixed(2);
+                        }
+                    } catch (e) {}
+                    html += '<tr><td>' + c.name + '</td><td>' + c.symbol + '</td><td>' + c.quantity + '</td><td>$' + c.purchase_price + '</td><td>' + currentPrice + '</td><td>' + value + '</td><td><button class="delete-btn" onclick="deleteCrypto(' + c.id + ')">🗑️</button></td></tr>';
+                }
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (e) {
+                document.getElementById('crypto-list').innerHTML = '<div class="empty">Erreur de chargement</div>';
+            }
+        }
+        
+        async function loadStocks() {
+            try {
+                const res = await fetch(API + '/stocks', { credentials: 'include' });
+                const stocks = await res.json();
+                const container = document.getElementById('stocks-list');
+                
+                if (stocks.length === 0) {
+                    container.innerHTML = '<div class="empty">Aucune action ajoutée</div>';
+                    return;
+                }
+                
+                let html = '<table><thead><tr><th>Nom</th><th>Symbole</th><th>Quantité</th><th>Prix d\\'achat</th><th>Prix actuel</th><th>Valeur</th><th></th></tr></thead><tbody>';
+                for (const s of stocks) {
+                    let currentPrice = '-';
+                    let value = '-';
+                    try {
+                        const priceRes = await fetch(API + '/stocks/' + s.id + '/price', { credentials: 'include' });
+                        if (priceRes.ok) {
+                            const priceData = await priceRes.json();
+                            currentPrice = '$' + priceData.current_price.toFixed(2);
+                            value = '$' + (priceData.current_price * s.quantity).toFixed(2);
+                        }
+                    } catch (e) {}
+                    html += '<tr><td>' + s.name + '</td><td>' + s.symbol + '</td><td>' + s.quantity + '</td><td>$' + s.purchase_price + '</td><td>' + currentPrice + '</td><td>' + value + '</td><td><button class="delete-btn" onclick="deleteStock(' + s.id + ')">🗑️</button></td></tr>';
+                }
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (e) {
+                document.getElementById('stocks-list').innerHTML = '<div class="empty">Erreur de chargement</div>';
+            }
+        }
+        
+        async function loadCoins() {
+            try {
+                const res = await fetch(API + '/coins', { credentials: 'include' });
+                const coins = await res.json();
+                const container = document.getElementById('coins-list');
+                
+                if (coins.length === 0) {
+                    container.innerHTML = '<div class="empty">Aucune pièce ajoutée</div>';
+                    return;
+                }
+                
+                let html = '<table><thead><tr><th>Nom</th><th>Quantité</th><th>Prix actuel</th><th>Valeur</th><th></th></tr></thead><tbody>';
+                for (const c of coins) {
+                    let currentPrice = '-';
+                    let value = '-';
+                    try {
+                        const priceRes = await fetch(API + '/coins/' + c.id + '/price', { credentials: 'include' });
+                        if (priceRes.ok) {
+                            const priceData = await priceRes.json();
+                            currentPrice = '$' + priceData.current_price.toFixed(2);
+                            value = '$' + (priceData.current_price * c.quantity).toFixed(2);
+                        }
+                    } catch (e) {}
+                    html += '<tr><td>' + c.name + '</td><td>' + c.quantity + '</td><td>' + currentPrice + '</td><td>' + value + '</td><td><button class="delete-btn" onclick="deleteCoin(' + c.id + ')">🗑️</button></td></tr>';
+                }
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (e) {
+                document.getElementById('coins-list').innerHTML = '<div class="empty">Erreur de chargement</div>';
+            }
+        }
+        
+        // Add functions
+        async function addCrypto(e) {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('crypto-name').value,
+                symbol: document.getElementById('crypto-symbol').value.toUpperCase(),
+                quantity: parseFloat(document.getElementById('crypto-quantity').value),
+                purchase_price: parseFloat(document.getElementById('crypto-price').value)
+            };
+            try {
+                const res = await fetch(API + '/crypto', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                    credentials: 'include'
+                });
+                if (res.ok) {
+                    closeModal('crypto');
+                    e.target.reset();
+                    loadCryptos();
+                    loadOverview();
+                } else {
+                    alert('Erreur lors de l\\'ajout');
+                }
+            } catch (err) { alert('Erreur'); }
+        }
+        
+        async function addStock(e) {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('stock-name').value,
+                symbol: document.getElementById('stock-symbol').value.toUpperCase(),
+                quantity: parseFloat(document.getElementById('stock-quantity').value),
+                purchase_price: parseFloat(document.getElementById('stock-price').value)
+            };
+            try {
+                const res = await fetch(API + '/stocks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                    credentials: 'include'
+                });
+                if (res.ok) {
+                    closeModal('stock');
+                    e.target.reset();
+                    loadStocks();
+                    loadOverview();
+                } else {
+                    alert('Erreur lors de l\\'ajout');
+                }
+            } catch (err) { alert('Erreur'); }
+        }
+        
+        async function addCoin(e) {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('coin-name').value,
+                url: document.getElementById('coin-url').value,
+                css_selector: document.getElementById('coin-selector').value,
+                quantity: parseFloat(document.getElementById('coin-quantity').value)
+            };
+            try {
+                const res = await fetch(API + '/coins', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                    credentials: 'include'
+                });
+                if (res.ok) {
+                    closeModal('coin');
+                    e.target.reset();
+                    loadCoins();
+                    loadOverview();
+                } else {
+                    alert('Erreur lors de l\\'ajout');
+                }
+            } catch (err) { alert('Erreur'); }
+        }
+        
+        // Delete functions
+        async function deleteCrypto(id) {
+            if (!confirm('Supprimer cette crypto ?')) return;
+            await fetch(API + '/crypto/' + id, { method: 'DELETE', credentials: 'include' });
+            loadCryptos();
+            loadOverview();
+        }
+        
+        async function deleteStock(id) {
+            if (!confirm('Supprimer cette action ?')) return;
+            await fetch(API + '/stocks/' + id, { method: 'DELETE', credentials: 'include' });
+            loadStocks();
+            loadOverview();
+        }
+        
+        async function deleteCoin(id) {
+            if (!confirm('Supprimer cette pièce ?')) return;
+            await fetch(API + '/coins/' + id, { method: 'DELETE', credentials: 'include' });
+            loadCoins();
+            loadOverview();
+        }
+        
+        // Initialize
+        checkAuth();
     </script>
 </body>
 </html>
