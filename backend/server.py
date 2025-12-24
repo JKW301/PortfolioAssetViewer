@@ -629,81 +629,29 @@ async def root():
         if index_path.exists():
             return FileResponse(index_path)
     
-    # Fallback if no build
+    # Serve our authentication test page as the main page
+    test_page = ROOT_DIR / "test_auth.html"
+    if test_page.exists():
+        return FileResponse(test_page)
+    
+    # Ultimate fallback - redirect to test auth page
     return HTMLResponse(content="""
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio Tracker - Déploiement Requis</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .card {
-            background: white;
-            border-radius: 16px;
-            padding: 48px;
-            max-width: 600px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            text-align: center;
-        }
-        h1 { color: #1a202c; font-size: 28px; margin-bottom: 16px; }
-        p { color: #4a5568; line-height: 1.6; margin-bottom: 12px; }
-        .status { color: #e53e3e; font-weight: 600; font-size: 18px; margin: 24px 0; }
-        .solution {
-            background: #f7fafc;
-            border-left: 4px solid #4299e1;
-            padding: 16px;
-            margin: 24px 0;
-            text-align: left;
-        }
-        .solution strong { color: #2d3748; display: block; margin-bottom: 8px; }
-        code {
-            background: #2d3748;
-            color: #48bb78;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        a {
-            display: inline-block;
-            background: #4299e1;
-            color: white;
-            padding: 12px 32px;
-            border-radius: 8px;
-            text-decoration: none;
-            margin-top: 24px;
-            font-weight: 600;
-            transition: background 0.2s;
-        }
-        a:hover { background: #3182ce; }
-    </style>
+    <title>Portfolio Tracker</title>
+    <script>
+        // Redirect to auth test page
+        window.location.href = '/api/test-auth';
+    </script>
 </head>
 <body>
-    <div class="card">
-        <h1>🚀 Portfolio Tracker</h1>
-        <div class="status">⚠️ Frontend Build Issue</div>
-        <p>Le backend API fonctionne correctement, mais le frontend build n'a pas été détecté.</p>
-        
-        <div class="solution">
-            <strong>Diagnostique :</strong>
-            <p>Frontend path: <code>{FRONTEND_BUILD or "Not found"}</code></p>
-            <br>
-            <p>Cela devrait être résolu automatiquement au prochain déploiement.</p>
-            <p>Si le problème persiste, contactez le support technique.</p>
-        </div>
-        
-        <p><strong>En attendant, utilisez l'API directement :</strong></p>
-        <a href="/docs">📚 Documentation API</a>
+    <div style="padding: 20px; text-align: center; font-family: Arial;">
+        <h1>Portfolio Tracker</h1>
+        <p>Redirection vers la page de connexion...</p>
+        <p><a href="/api/test-auth">Cliquez ici si vous n'êtes pas redirigé automatiquement</a></p>
     </div>
 </body>
 </html>
